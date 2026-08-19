@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>智能选校测评</title>
+  <link rel="stylesheet" href="/style.css" />
+</head>
+<body>
+  <header class="site-header">
+    <div class="container">
+      <h1 class="logo">智能选校测评</h1>
+      <p class="subtitle">30 秒填写背景，AI 为你推荐海外院校</p>
+    </div>
+  </header>
+
+  <main class="container">
+    <!-- 表单区 -->
+    <section class="form-card" id="form-card">
+      <h2 class="section-title">填写你的背景</h2>
+      <form id="evaluate-form" novalidate>
+        <div class="field">
+          <label for="gpa">GPA</label>
+          <input
+            type="number"
+            id="gpa"
+            name="gpa"
+            step="0.01"
+            min="0"
+            max="5"
+            placeholder="例：3.6"
+            required
+          />
+          <span class="hint">4 分制或 5 分制均可</span>
+        </div>
+
+        <div class="field">
+          <label for="major">申请专业</label>
+          <input
+            type="text"
+            id="major"
+            name="major"
+            placeholder="例：计算机科学 / 金融"
+            required
+          />
+        </div>
+
+        <div class="field">
+          <label for="country">目标国家</label>
+          <select id="country" name="country" required>
+            <option value="" disabled selected>请选择国家</option>
+            <option value="美国">美国</option>
+            <option value="英国">英国</option>
+            <option value="加拿大">加拿大</option>
+            <option value="澳大利亚">澳大利亚</option>
+            <option value="新加坡">新加坡</option>
+            <option value="中国香港">中国香港</option>
+            <option value="其他">其他</option>
+          </select>
+        </div>
+
+        <button type="submit" class="btn-primary" id="submit-btn">开始测评</button>
+      </form>
+    </section>
+
+    <!-- 结果展示区 -->
+    <section class="result-area" id="result-area" hidden>
+      <h2 class="section-title">你的选校推荐</h2>
+      <p class="result-tip" id="result-tip">部分信息已隐藏，解锁完整报告查看全部推荐理由</p>
+
+      <div class="thank-you" id="thank-you" hidden>
+        <h3 class="thank-you-title">报告已解锁</h3>
+        <p class="thank-you-desc">感谢留下联系方式，顾问将尽快与你联系，请保持电话 / 微信畅通。</p>
+      </div>
+
+      <div class="tiers" id="tiers">
+        <!-- 三档结果卡片由 JS 动态渲染 -->
+      </div>
+
+      <button type="button" class="btn-primary unlock-cta" id="unlock-btn">解锁完整报告</button>
+    </section>
+  </main>
+
+  <!-- 留资弹窗 -->
+  <div class="modal-overlay" id="modal-overlay" hidden>
+    <div class="modal" role="dialog" aria-modal="true" aria-labelledby="modal-title">
+      <h2 class="modal-title" id="modal-title">解锁完整选校报告</h2>
+      <p class="modal-desc">留下联系方式，顾问将为你 1 对 1 解读报告并答疑</p>
+
+      <form id="lead-form" novalidate>
+        <div class="field">
+          <label for="wechat">微信号</label>
+          <input
+            type="text"
+            id="wechat"
+            name="wechat"
+            placeholder="请输入微信号"
+            required
+          />
+        </div>
+
+        <div class="field">
+          <label for="phone">手机号</label>
+          <input
+            type="tel"
+            id="phone"
+            name="phone"
+            placeholder="请输入手机号"
+            required
+          />
+        </div>
+
+        <div class="modal-actions">
+          <button type="button" class="btn-ghost" id="modal-cancel">暂不</button>
+          <button type="submit" class="btn-primary" id="lead-submit">解锁完整报告</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script src="/app.js"></script>
+</body>
+</html>
