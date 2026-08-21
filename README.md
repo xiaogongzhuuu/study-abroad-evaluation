@@ -34,7 +34,7 @@ study-abroad-evaluation/
 │   │       └── notify.py   # 企微 + 邮件通知
 │   ├── .env.example        # 配置模板（复制为 .env 填写）
 │   └── requirements.txt
-├── web/static/             # 前端页面（index.html / app.js / style.css）
+├── web/static/             # 前端页面（index.html / admin.html / app.js / admin.js / style.css）
 ├── data/leads.db           # 留资数据库（自动创建，已被 gitignore）
 └── scripts/smoke_test.sh   # 全链路冒烟测试
 ```
@@ -67,6 +67,7 @@ cp .env.example .env   # 填写 DEEPSEEK_API_KEY（通知配置可选，见下�
 | `SMTP_HOST` / `SMTP_PORT` | 可选 | SMTP 服务器（QQ 邮箱：`smtp.qq.com`，端口 465） |
 | `SMTP_USER` / `SMTP_PASSWORD` | 可选 | 发件邮箱 + SMTP 授权码（非登录密码） |
 | `NOTIFY_EMAIL_TO` | 可选 | 收件顾问邮箱，多个用英文逗号分隔 |
+| `ADMIN_TOKEN` | 可选 | 数据查看界面（/admin.html）访问口令。留空则开放访问，**公网部署务必设置** |
 
 通知两项都留空不影响使用，只是顾问收不到线索提醒。改配置后需重启服务。
 
@@ -76,10 +77,18 @@ cp .env.example .env   # 填写 DEEPSEEK_API_KEY（通知配置可选，见下�
 |------|------|------|
 | GET | `/health` | 健康检查 |
 | GET | `/api/v1/ping-deepseek` | DeepSeek 链路连通性验证 |
-| POST | `/api/v1/evaluate` | 选校测评：`{gpa, major, target_country}` → 三档 6 校 |
-| POST | `/api/v1/leads` | 留资：`{wechat, phone, gpa?, major?, target_country?}` → `{id, message}` |
+| POST | `/api/v1/evaluate` | 选校测评：`{gpa, major, target_country, school_tier?, degree?, language_type?, language_score?}` → 三档 6 校（选填项填了才参与推荐） |
+| POST | `/api/v1/leads` | 留资：`{wechat, phone, gpa?, major?, target_country?, school_tier?, degree?, language_type?, language_score?}` → `{id, message}` |
+| GET | `/api/v1/leads` | 线索列表（数据查看界面用）：需请求头 `X-Admin-Token` 携带口令（配置了 `ADMIN_TOKEN` 时） |
 
 错误统一为 `{"detail": "中文提示"}`：参数校验失败 422、AI 服务不可用 502、其他异常 500。
+
+## 数据查看
+
+浏览器打开 <http://localhost:8000/admin.html>（或 `/admin`）查看全部留资线索：表格展示联系方式与测评背景（含选填维度），支持刷新、统计、导出 CSV。
+
+- 配置了 `ADMIN_TOKEN`：首次打开需输入口令（与 `.env` 中一致），口令保存在当前浏览器标签页会话中。
+- 未配置 `ADMIN_TOKEN`：直接开放访问，仅适合内网 / 开发环境，公网部署务必设置口令。
 
 ## 测试
 
@@ -88,9 +97,10 @@ cp .env.example .env   # 填写 DEEPSEEK_API_KEY（通知配置可选，见下�
 ```bash
 bash scripts/smoke_test.sh
 # 指定地址：BASE_URL=http://your-server:8000 bash scripts/smoke_test.sh
+# 配置了 ADMIN_TOKEN 时需透传口令：TOKEN=你的口令 bash scripts/smoke_test.sh
 ```
 
-覆盖：健康检查、GPA/手机号等参数校验、测评真实调用、留资入库、首页可访问。
+覆盖：健康检查、GPA/手机号等参数校验、测评真实调用、留资入库（含选填字段）、线索列表、数据查看页、首页可访问。
 
 ## 部署（生产）
 

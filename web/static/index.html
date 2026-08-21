@@ -63,6 +63,51 @@
           </select>
         </div>
 
+        <div class="field-row">
+          <div class="field">
+            <label for="school-tier">本科院校档次<span class="optional-tag">选填</span></label>
+            <select id="school-tier" name="school_tier">
+              <option value="" selected>不填</option>
+              <option value="985">985</option>
+              <option value="211">211</option>
+              <option value="双一流">双一流</option>
+              <option value="普通本科">普通本科</option>
+              <option value="海外本科">海外本科</option>
+            </select>
+          </div>
+          <div class="field">
+            <label for="degree">意向学位<span class="optional-tag">选填</span></label>
+            <select id="degree" name="degree">
+              <option value="" selected>不填</option>
+              <option value="本科">本科</option>
+              <option value="硕士">硕士</option>
+              <option value="博士">博士</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="field-row">
+          <div class="field">
+            <label for="lang-type">语言类型<span class="optional-tag">选填</span></label>
+            <select id="lang-type" name="language_type">
+              <option value="" selected>不填</option>
+              <option value="雅思">雅思</option>
+              <option value="托福">托福</option>
+            </select>
+          </div>
+          <div class="field">
+            <label for="lang-score">语言成绩<span class="optional-tag">选填</span></label>
+            <input
+              type="number"
+              id="lang-score"
+              name="language_score"
+              step="0.5"
+              min="0"
+              placeholder="例：7.0 / 100"
+            />
+          </div>
+        </div>
+
         <button type="submit" class="btn-primary" id="submit-btn">开始测评</button>
       </form>
     </section>

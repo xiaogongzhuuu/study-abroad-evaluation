@@ -78,6 +78,10 @@ form.addEventListener('submit', async (e) => {
   const gpaInput = document.getElementById('gpa');
   const majorInput = document.getElementById('major');
   const countryInput = document.getElementById('country');
+  const tierInput = document.getElementById('school-tier');
+  const degreeInput = document.getElementById('degree');
+  const langTypeInput = document.getElementById('lang-type');
+  const langScoreInput = document.getElementById('lang-score');
 
   clearFieldErrors(form);
   hideFormError(form);
@@ -85,6 +89,11 @@ form.addEventListener('submit', async (e) => {
   const gpa = parseFloat(gpaInput.value);
   const major = majorInput.value.trim();
   const country = countryInput.value;
+  const schoolTier = tierInput.value;
+  const degree = degreeInput.value;
+  const langType = langTypeInput.value;
+  const langScoreRaw = langScoreInput.value.trim();
+  const langScore = langScoreRaw === '' ? NaN : parseFloat(langScoreRaw);
 
   if (Number.isNaN(gpa) || gpa <= 0 || gpa > 5) {
     setFieldError(gpaInput, 'GPA 需为 0~5 之间的数字');
@@ -98,17 +107,44 @@ form.addEventListener('submit', async (e) => {
     setFieldError(countryInput, '请选择目标国家');
     return;
   }
+  // 语言类型与成绩需成对填写
+  if ((langType && Number.isNaN(langScore)) || (!langType && !Number.isNaN(langScore))) {
+    setFieldError(langScoreInput, '语言类型和成绩需一起填写');
+    return;
+  }
+  if (!Number.isNaN(langScore)) {
+    const max = langType === '雅思' ? 9 : 120;
+    if (langScore <= 0 || langScore > max) {
+      setFieldError(langScoreInput, `${langType}成绩需为 0~${max} 之间`);
+      return;
+    }
+  }
 
   setLoading(true);
   try {
+    const payload = { gpa, major, target_country: country };
+    if (schoolTier) payload.school_tier = schoolTier;
+    if (degree) payload.degree = degree;
+    if (langType && !Number.isNaN(langScore)) {
+      payload.language_type = langType;
+      payload.language_score = langScore;
+    }
     const res = await fetch('/api/v1/evaluate', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ gpa, major, target_country: country }),
+      body: JSON.stringify(payload),
     });
     if (!res.ok) throw new Error(await serverMessage(res));
     const data = await res.json();
-    currentContext = { gpa, major, target_country: country };
+    currentContext = {
+      gpa,
+      major,
+      target_country: country,
+      school_tier: schoolTier || null,
+      degree: degree || null,
+      language_type: langType || null,
+      language_score: Number.isNaN(langScore) ? null : langScore,
+    };
     renderTiers(data.tiers);
     resultArea.hidden = false;
     resultArea.scrollIntoView({ behavior: 'smooth' });
@@ -219,6 +255,10 @@ leadForm.addEventListener('submit', async (e) => {
         gpa: currentContext?.gpa ?? null,
         major: currentContext?.major ?? null,
         target_country: currentContext?.target_country ?? null,
+        school_tier: currentContext?.school_tier ?? null,
+        degree: currentContext?.degree ?? null,
+        language_type: currentContext?.language_type ?? null,
+        language_score: currentContext?.language_score ?? null,
       }),
     });
     if (!res.ok) throw new Error(await serverMessage(res));

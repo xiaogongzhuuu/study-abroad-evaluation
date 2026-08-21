@@ -33,6 +33,13 @@ def _lead_summary(lead: dict) -> str:
         lines.append(f"专业：{lead['major']}")
     if lead.get("target_country"):
         lines.append(f"目标国家：{lead['target_country']}")
+    if lead.get("school_tier"):
+        lines.append(f"院校档次：{lead['school_tier']}")
+    if lead.get("degree"):
+        lines.append(f"意向学位：{lead['degree']}")
+    if lead.get("language_score") is not None:
+        label = f"{lead.get('language_type')} " if lead.get("language_type") else ""
+        lines.append(f"语言成绩：{label}{lead['language_score']:g}")
     lines.append(f"留资时间：{_fmt_time(lead['created_at'])}")
     return "\n".join(lines)
 

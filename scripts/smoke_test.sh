@@ -8,6 +8,12 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(dirname "$SCRIPT_DIR")"
 DB_PATH="${REPO_ROOT}/data/leads.db"
 
+# 数据查看接口口令（.env 配置了 ADMIN_TOKEN 时需透传：TOKEN=xxx bash scripts/smoke_test.sh）
+TOKEN_HEADER=()
+if [ -n "${TOKEN:-}" ]; then
+  TOKEN_HEADER=(-H "X-Admin-Token: ${TOKEN}")
+fi
+
 PASS=0
 FAIL=0
 
@@ -83,11 +89,11 @@ body=${resp%$'\n'*}; status=${resp##*$'\n'}
 check_status "手机号格式错误 → 422" "${status#__STATUS__:}" 422
 check "手机号错误提示中文" "$body" "手机号"
 
-# 正常留资（同时验证数据入库）
+# 正常留资（同时验证数据入库，带选填背景字段）
 count_before=$(python3 -c "import sqlite3;print(sqlite3.connect('${DB_PATH}').execute('SELECT COUNT(*) FROM leads').fetchone()[0])" 2>/dev/null || echo 0)
 resp=$(request -X POST "${BASE_URL}/api/v1/leads" \
   -H 'Content-Type: application/json' \
-  -d '{"wechat":"smoke_test","phone":"13800138000","gpa":3.6,"major":"计算机科学","target_country":"美国"}')
+  -d '{"wechat":"smoke_test","phone":"13800138000","gpa":3.6,"major":"计算机科学","target_country":"美国","school_tier":"985","degree":"硕士","language_type":"雅思","language_score":7}')
 body=${resp%$'\n'*}; status=${resp##*$'\n'}
 check_status "正常留资 → 200" "${status#__STATUS__:}" 200
 check "返回留资成功" "$body" "留资成功"
@@ -100,7 +106,23 @@ else
   FAIL=$((FAIL + 1))
 fi
 
-echo "== 5. 静态页面 =="
+# 语言类型/成绩未成对时留资不受影响（字段独立可选）
+resp=$(request -X POST "${BASE_URL}/api/v1/leads" \
+  -H 'Content-Type: application/json' \
+  -d '{"wechat":"smoke_partial","phone":"13900139000","language_score":6.5}')
+body=${resp%$'\n'*}; status=${resp##*$'\n'}
+check_status "仅填语言成绩留资 → 200" "${status#__STATUS__:}" 200
+
+echo "== 5. 数据查看接口 =="
+resp=$(request -H "X-Admin-Token: ${TOKEN:-}" "${BASE_URL}/api/v1/leads")
+body=${resp%$'\n'*}; status=${resp##*$'\n'}
+check_status "线索列表 → 200" "${status#__STATUS__:}" 200
+check "列表含新留资" "$body" "smoke_test"
+check "列表含选填字段" "$body" "雅思"
+resp=$(request "${BASE_URL}/admin.html")
+check "数据查看页可访问" "${resp%$'\n'*}" "留资数据"
+
+echo "== 6. 静态页面 =="
 resp=$(request "${BASE_URL}/")
 check "首页可访问" "${resp%$'\n'*}" "智能选校测评"
 

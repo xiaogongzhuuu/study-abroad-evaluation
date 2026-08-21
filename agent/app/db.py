@@ -13,7 +13,7 @@ def _connect() -> sqlite3.Connection:
 
 
 def init_db() -> None:
-    """初始化数据库与 leads 表（幂等）。"""
+    """初始化数据库与 leads 表（幂等），并为旧库补缺失列。"""
     DB_PATH.parent.mkdir(parents=True, exist_ok=True)
     conn = _connect()
     try:
@@ -31,8 +31,26 @@ def init_db() -> None:
                 )
                 """
             )
+            _migrate(conn)
     finally:
         conn.close()
+
+
+# 后续新增的选填列：建表语句不动，用 ALTER TABLE 补齐（兼容旧库）
+_EXTRA_COLUMNS = {
+    "school_tier": "TEXT",
+    "degree": "TEXT",
+    "language_type": "TEXT",
+    "language_score": "REAL",
+}
+
+
+def _migrate(conn: sqlite3.Connection) -> None:
+    """为已存在的旧表补上缺失的列（幂等）。"""
+    existing = {row["name"] for row in conn.execute("PRAGMA table_info(leads)")}
+    for col, col_type in _EXTRA_COLUMNS.items():
+        if col not in existing:
+            conn.execute(f"ALTER TABLE leads ADD COLUMN {col} {col_type}")
 
 
 def insert_lead(
@@ -41,6 +59,10 @@ def insert_lead(
     gpa: float | None = None,
     major: str | None = None,
     target_country: str | None = None,
+    school_tier: str | None = None,
+    degree: str | None = None,
+    language_type: str | None = None,
+    language_score: float | None = None,
 ) -> dict:
     """插入一条留资记录，返回完整记录（含 id 与 created_at）。"""
     created_at = datetime.now(timezone.utc).isoformat()
@@ -49,10 +71,16 @@ def insert_lead(
         with conn:
             cur = conn.execute(
                 """
-                INSERT INTO leads (wechat, phone, gpa, major, target_country, created_at)
-                VALUES (?, ?, ?, ?, ?, ?)
+                INSERT INTO leads (
+                    wechat, phone, gpa, major, target_country,
+                    school_tier, degree, language_type, language_score, created_at
+                )
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 """,
-                (wechat, phone, gpa, major, target_country, created_at),
+                (
+                    wechat, phone, gpa, major, target_country,
+                    school_tier, degree, language_type, language_score, created_at,
+                ),
             )
             return {
                 "id": int(cur.lastrowid),
@@ -61,7 +89,23 @@ def insert_lead(
                 "gpa": gpa,
                 "major": major,
                 "target_country": target_country,
+                "school_tier": school_tier,
+                "degree": degree,
+                "language_type": language_type,
+                "language_score": language_score,
                 "created_at": created_at,
             }
+    finally:
+        conn.close()
+
+
+def list_leads() -> list[dict]:
+    """按留资时间倒序返回全部线索（数据查看界面用）。"""
+    conn = _connect()
+    try:
+        rows = conn.execute(
+            "SELECT * FROM leads ORDER BY id DESC"
+        ).fetchall()
+        return [dict(row) for row in rows]
     finally:
         conn.close()

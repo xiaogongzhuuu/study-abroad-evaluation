@@ -95,6 +95,24 @@ main.container {
   margin-bottom: 20px;
 }
 
+/* 选填字段双列布局 */
+.field-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.optional-tag {
+  display: inline-block;
+  margin-left: 6px;
+  padding: 0 6px;
+  font-size: 11px;
+  font-weight: 400;
+  color: var(--text-muted);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+}
+
 .field label {
   display: block;
   font-weight: 600;
@@ -323,6 +341,86 @@ main.container {
   flex: 1;
 }
 
+/* 数据查看界面 */
+.admin-card {
+  padding: 24px 20px;
+}
+
+.admin-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 16px;
+  flex-wrap: wrap;
+}
+
+.admin-stats {
+  display: flex;
+  gap: 16px;
+}
+
+.stat {
+  font-size: 14px;
+  color: var(--text-muted);
+}
+
+.stat b {
+  font-size: 18px;
+  color: var(--text);
+  margin-right: 4px;
+}
+
+.admin-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.admin-error {
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  color: #b91c1c;
+  border-radius: 8px;
+  padding: 10px 14px;
+  font-size: 14px;
+  margin-bottom: 16px;
+}
+
+.table-wrap {
+  overflow-x: auto;
+}
+
+.leads-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+  white-space: nowrap;
+}
+
+.leads-table th,
+.leads-table td {
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--border);
+  text-align: left;
+}
+
+.leads-table th {
+  color: var(--text-muted);
+  font-weight: 600;
+  background: var(--bg);
+}
+
+.leads-table tbody tr:hover {
+  background: #f8fafc;
+}
+
+.empty-tip {
+  text-align: center;
+  color: var(--text-muted);
+  padding: 32px 0;
+  font-size: 14px;
+}
+
 /* 加载动画 */
 .spinner {
   display: inline-block;
@@ -347,6 +445,11 @@ main.container {
   .form-card,
   .result-area {
     padding: 20px;
+  }
+
+  .field-row {
+    grid-template-columns: 1fr;
+    gap: 0;
   }
 
   .logo-icon {

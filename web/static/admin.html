@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>留资数据 - 智能选校测评</title>
+  <link rel="icon" type="image/svg+xml" href="/logo.svg" />
+  <link rel="stylesheet" href="/style.css" />
+</head>
+<body>
+  <header class="site-header">
+    <div class="container">
+      <div class="logo">
+        <img class="logo-icon" src="/logo.svg" alt="" />
+        <h1 class="logo-text">留资数据</h1>
+      </div>
+      <p class="subtitle">智能选校测评 · 线索查看</p>
+    </div>
+  </header>
+
+  <main class="container">
+    <section class="form-card admin-card">
+      <div class="admin-toolbar">
+        <div class="admin-stats">
+          <span class="stat">总线索 <b id="stat-total">-</b></span>
+          <span class="stat">今日新增 <b id="stat-today">-</b></span>
+        </div>
+        <div class="admin-actions">
+          <button type="button" class="btn-ghost" id="refresh-btn">刷新</button>
+          <button type="button" class="btn-ghost" id="export-btn">导出 CSV</button>
+        </div>
+      </div>
+
+      <div class="admin-error" id="admin-error" hidden></div>
+
+      <div class="table-wrap">
+        <table class="leads-table">
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>留资时间</th>
+              <th>微信</th>
+              <th>手机</th>
+              <th>GPA</th>
+              <th>专业</th>
+              <th>目标国家</th>
+              <th>院校档次</th>
+              <th>学位</th>
+              <th>语言成绩</th>
+            </tr>
+          </thead>
+          <tbody id="leads-body"></tbody>
+        </table>
+      </div>
+      <p class="empty-tip" id="empty-tip" hidden>暂无留资数据</p>
+    </section>
+  </main>
+
+  <!-- 访问口令弹窗 -->
+  <div class="modal-overlay" id="token-overlay" hidden>
+    <div class="modal" role="dialog" aria-modal="true" aria-labelledby="token-title">
+      <h2 class="modal-title" id="token-title">需要访问口令</h2>
+      <p class="modal-desc">该页面包含用户联系方式，请输入访问口令</p>
+      <form id="token-form" novalidate>
+        <div class="field">
+          <input
+            type="password"
+            id="token-input"
+            placeholder="访问口令"
+            autocomplete="off"
+          />
+          <span class="field-error" id="token-error" hidden></span>
+        </div>
+        <button type="submit" class="btn-primary">进入</button>
+      </form>
+    </div>
+  </div>
+
+  <script src="/admin.js"></script>
+</body>
+</html>

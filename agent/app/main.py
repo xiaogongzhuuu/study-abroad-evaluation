@@ -1,14 +1,16 @@
+import hmac
 import logging
 from contextlib import asynccontextmanager
 from pathlib import Path
 
-from fastapi import BackgroundTasks, FastAPI, Request
+from fastapi import BackgroundTasks, FastAPI, Header, Request
 from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 
-from app.db import init_db, insert_lead
+from app.config import ADMIN_TOKEN
+from app.db import init_db, insert_lead, list_leads
 from app.schemas import EvaluateRequest, EvaluateResponse, LeadRequest, LeadResponse
 from app.services.deepseek import AIError, chat
 from app.services.notify import notify_new_lead
@@ -21,6 +23,10 @@ _FIELD_LABELS = {
     "gpa": "GPA",
     "major": "申请专业",
     "target_country": "目标国家",
+    "school_tier": "本科院校档次",
+    "degree": "意向学位",
+    "language_type": "语言类型",
+    "language_score": "语言成绩",
     "wechat": "微信号",
     "phone": "手机号",
 }
@@ -109,10 +115,31 @@ def evaluate_schools(req: EvaluateRequest) -> EvaluateResponse:
 def create_lead(req: LeadRequest, background_tasks: BackgroundTasks) -> LeadResponse:
     """留资闭环：保存联系方式 + 测评背景，并异步通知顾问跟进。"""
     lead = insert_lead(
-        req.wechat, req.phone, req.gpa, req.major, req.target_country
+        req.wechat, req.phone, req.gpa, req.major, req.target_country,
+        req.school_tier, req.degree, req.language_type, req.language_score,
     )
     background_tasks.add_task(notify_new_lead, lead)
     return LeadResponse(id=lead["id"], message="留资成功")
+
+
+@app.get("/api/v1/leads")
+def get_leads(x_admin_token: str | None = Header(default=None)) -> dict:
+    """数据查看界面接口：按倒序返回全部留资线索。
+
+    配置了 ADMIN_TOKEN 时须在请求头 X-Admin-Token 携带正确口令，
+    否则 401；未配置则开放访问（仅限内网/开发环境）。
+    """
+    if ADMIN_TOKEN and not (
+        x_admin_token and hmac.compare_digest(x_admin_token, ADMIN_TOKEN)
+    ):
+        return JSONResponse(status_code=401, content={"detail": "需要访问口令"})
+    return {"leads": list_leads()}
+
+
+@app.get("/admin")
+def admin_page() -> RedirectResponse:
+    """数据查看界面快捷入口。"""
+    return RedirectResponse("/admin.html")
 
 
 # 静态前端托管（放在最后，避免覆盖 /api 路由）
