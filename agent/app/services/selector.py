@@ -1,7 +1,17 @@
 import json
 
+from pydantic import ValidationError
+
 from app.schemas import EvaluateRequest, EvaluateResponse
-from app.services.deepseek import chat
+from app.services.deepseek import AIError, chat
+
+# 模型偶尔会输出英文档位，归一化为中文（前端按中文档位配色）
+_LEVEL_ALIAS = {
+    "reach": "冲刺",
+    "match": "匹配",
+    "safety": "保底",
+    "safe": "保底",
+}
 
 _SYSTEM_PROMPT = """你是一位资深的留学选校顾问，擅长根据学生背景推荐海外院校。
 
@@ -25,7 +35,11 @@ _SYSTEM_PROMPT = """你是一位资深的留学选校顾问，擅长根据学生
 
 
 def evaluate(req: EvaluateRequest) -> EvaluateResponse:
-    """调用 DeepSeek 生成三档选校推荐，解析为结构化响应。"""
+    """调用 DeepSeek 生成三档选校推荐，解析为结构化响应。
+
+    返回内容无法解析或缺少档位时抛 AIError（上层统一转 502），
+    避免裸 500 直接暴露给前端。
+    """
     user_prompt = (
         f"学生背景：GPA {req.gpa}，申请专业 {req.major}，目标国家 {req.target_country}。"
         f"请返回三档共 6 所学校的推荐 JSON。"
@@ -38,5 +52,21 @@ def evaluate(req: EvaluateRequest) -> EvaluateResponse:
         temperature=0.5,
         response_format={"type": "json_object"},
     )
-    data = json.loads(raw)
-    return EvaluateResponse.model_validate(data)
+    try:
+        data = json.loads(raw)
+    except json.JSONDecodeError as exc:
+        raise AIError("AI 返回内容格式异常，请重试") from exc
+    try:
+        resp = EvaluateResponse.model_validate(data)
+    except ValidationError as exc:
+        raise AIError("AI 返回内容不完整，请重试") from exc
+    if len(resp.tiers) != 3:
+        raise AIError("AI 返回档位缺失，请重试")
+    return _normalize_levels(resp)
+
+
+def _normalize_levels(resp: EvaluateResponse) -> EvaluateResponse:
+    """把模型偶尔输出的英文档位归一化为中文，保证前端配色正确。"""
+    for tier in resp.tiers:
+        tier.level = _LEVEL_ALIAS.get(tier.level.strip().lower(), tier.level.strip())
+    return resp

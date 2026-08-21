@@ -23,23 +23,79 @@ const LEVEL_CLASS = {
   保底: 'safety',
 };
 
+// 中国大陆手机号：1 开头共 11 位
+const PHONE_RE = /^1[3-9]\d{9}$/;
+
+// ---- 表单校验与错误提示（D7） ----
+
+function setFieldError(input, msg) {
+  const field = input.closest('.field');
+  let errEl = field.querySelector('.field-error');
+  if (!errEl) {
+    errEl = document.createElement('span');
+    errEl.className = 'field-error';
+    field.appendChild(errEl);
+  }
+  errEl.textContent = msg;
+  input.classList.add('invalid');
+}
+
+function clearFieldErrors(formEl) {
+  formEl.querySelectorAll('.field-error').forEach((el) => el.remove());
+  formEl.querySelectorAll('.invalid').forEach((el) => el.classList.remove('invalid'));
+}
+
+function showFormError(formEl, msg) {
+  let errEl = formEl.querySelector('.form-error');
+  if (!errEl) {
+    errEl = document.createElement('div');
+    errEl.className = 'form-error';
+    formEl.appendChild(errEl);
+  }
+  errEl.textContent = msg;
+  errEl.hidden = false;
+}
+
+function hideFormError(formEl) {
+  const errEl = formEl.querySelector('.form-error');
+  if (errEl) errEl.hidden = true;
+}
+
+// 提取服务端错误信息：优先返回接口返回的 detail，网络异常给固定提示
+async function serverMessage(res) {
+  try {
+    const data = await res.json();
+    if (data.detail) return data.detail;
+  } catch (_) {
+    /* 响应不是 JSON，走默认提示 */
+  }
+  return `请求失败（${res.status}）`;
+}
+
 form.addEventListener('submit', async (e) => {
   e.preventDefault();
 
-  const gpa = parseFloat(document.getElementById('gpa').value);
-  const major = document.getElementById('major').value.trim();
-  const country = document.getElementById('country').value;
+  const gpaInput = document.getElementById('gpa');
+  const majorInput = document.getElementById('major');
+  const countryInput = document.getElementById('country');
 
-  if (!gpa || Number.isNaN(gpa)) {
-    alert('请填写有效的 GPA');
+  clearFieldErrors(form);
+  hideFormError(form);
+
+  const gpa = parseFloat(gpaInput.value);
+  const major = majorInput.value.trim();
+  const country = countryInput.value;
+
+  if (Number.isNaN(gpa) || gpa <= 0 || gpa > 5) {
+    setFieldError(gpaInput, 'GPA 需为 0~5 之间的数字');
     return;
   }
   if (!major) {
-    alert('请填写申请专业');
+    setFieldError(majorInput, '请填写申请专业');
     return;
   }
   if (!country) {
-    alert('请选择目标国家');
+    setFieldError(countryInput, '请选择目标国家');
     return;
   }
 
@@ -50,14 +106,18 @@ form.addEventListener('submit', async (e) => {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ gpa, major, target_country: country }),
     });
-    if (!res.ok) throw new Error(`请求失败：${res.status}`);
+    if (!res.ok) throw new Error(await serverMessage(res));
     const data = await res.json();
     currentContext = { gpa, major, target_country: country };
     renderTiers(data.tiers);
     resultArea.hidden = false;
     resultArea.scrollIntoView({ behavior: 'smooth' });
   } catch (err) {
-    alert('测评失败，请稍后重试');
+    const msg =
+      err instanceof TypeError
+        ? '网络异常，请检查连接后重试'
+        : err.message || '测评失败，请稍后重试';
+    showFormError(form, msg);
     console.error(err);
   } finally {
     setLoading(false);
@@ -129,9 +189,23 @@ document.addEventListener('keydown', (e) => {
 leadForm.addEventListener('submit', async (e) => {
   e.preventDefault();
 
-  const wechat = document.getElementById('wechat').value.trim();
-  const phone = document.getElementById('phone').value.trim();
-  if (!wechat || !phone) return;
+  const wechatInput = document.getElementById('wechat');
+  const phoneInput = document.getElementById('phone');
+
+  clearFieldErrors(leadForm);
+  hideFormError(leadForm);
+
+  const wechat = wechatInput.value.trim();
+  const phone = phoneInput.value.trim();
+
+  if (wechat.length < 2) {
+    setFieldError(wechatInput, '请填写微信号');
+    return;
+  }
+  if (!PHONE_RE.test(phone)) {
+    setFieldError(phoneInput, '请填写正确的 11 位手机号');
+    return;
+  }
 
   leadSubmitBtn.disabled = true;
   leadSubmitBtn.innerHTML = '<span class="spinner"></span>解锁中...';
@@ -147,11 +221,15 @@ leadForm.addEventListener('submit', async (e) => {
         target_country: currentContext?.target_country ?? null,
       }),
     });
-    if (!res.ok) throw new Error(`请求失败：${res.status}`);
+    if (!res.ok) throw new Error(await serverMessage(res));
     unlockReport();
     closeModal();
   } catch (err) {
-    alert('提交失败，请稍后重试');
+    const msg =
+      err instanceof TypeError
+        ? '网络异常，请检查连接后重试'
+        : err.message || '提交失败，请稍后重试';
+    showFormError(leadForm, msg);
     console.error(err);
   } finally {
     leadSubmitBtn.disabled = false;
