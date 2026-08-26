@@ -2,15 +2,16 @@ import hmac
 import logging
 from contextlib import asynccontextmanager
 from pathlib import Path
+from uuid import UUID
 
-from fastapi import BackgroundTasks, FastAPI, Header, Request
+from fastapi import BackgroundTasks, FastAPI, Header, HTTPException, Request
 from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 
 from app.config import ADMIN_TOKEN
-from app.db import init_db, insert_lead, list_leads
+from app.db import get_report, init_db, insert_lead, insert_report, list_leads
 from app.schemas import EvaluateRequest, EvaluateResponse, LeadRequest, LeadResponse
 from app.services.deepseek import AIError, chat
 from app.services.notify import notify_new_lead
@@ -108,15 +109,21 @@ def ping_deepseek() -> dict:
 @app.post("/api/v1/evaluate", response_model=EvaluateResponse)
 def evaluate_schools(req: EvaluateRequest) -> EvaluateResponse:
     """选校核心接口：输入 GPA+专业+目标国家，返回三档 6 校推荐。"""
-    return evaluate(req)
+    result = evaluate(req)
+    result.report_id = UUID(insert_report(result.model_dump_json(exclude={"report_id"})))
+    return result
 
 
 @app.post("/api/v1/leads", response_model=LeadResponse)
 def create_lead(req: LeadRequest, background_tasks: BackgroundTasks) -> LeadResponse:
     """留资闭环：保存联系方式 + 测评背景，并异步通知顾问跟进。"""
+    report_id = str(req.report_id) if req.report_id else None
+    if report_id and not get_report(report_id):
+        raise HTTPException(status_code=400, detail="测评报告不存在或已失效，请重新测评")
     lead = insert_lead(
         req.wechat, req.phone, req.gpa, req.major, req.target_country,
         req.school_tier, req.degree, req.language_type, req.language_score,
+        report_id,
     )
     background_tasks.add_task(notify_new_lead, lead)
     return LeadResponse(id=lead["id"], message="留资成功")

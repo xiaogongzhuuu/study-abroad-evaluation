@@ -1,3 +1,4 @@
+import json
 import logging
 import smtplib
 from datetime import datetime
@@ -44,6 +45,23 @@ def _lead_summary(lead: dict) -> str:
     return "\n".join(lines)
 
 
+def _school_summary(lead: dict) -> str | None:
+    """从留资携带的报告 JSON 提取学校清单，供通知消息展示；无报告或解析失败返回 None。"""
+    raw = lead.get("result_json")
+    if not raw:
+        return None
+    try:
+        tiers = json.loads(raw).get("tiers", [])
+    except (json.JSONDecodeError, AttributeError):
+        return None
+    groups = []
+    for tier in tiers:
+        names = "、".join(s.get("name", "") for s in tier.get("schools", []))
+        if names:
+            groups.append(f"{tier.get('level', '')}：{names}")
+    return "推荐学校 " + "；".join(groups) if groups else None
+
+
 def send_wecom_text(text: str) -> None:
     """推一条文本消息到企微群；未配置 webhook 则跳过。"""
     if not WECOM_WEBHOOK_URL:
@@ -76,6 +94,9 @@ def send_email(subject: str, body: str) -> None:
 def notify_new_lead(lead: dict) -> None:
     """留资成功后通知顾问：先企微群，再邮件。任一失败不影响留资。"""
     summary = _lead_summary(lead)
+    schools = _school_summary(lead)
+    if schools:
+        summary += "\n" + schools
     subject = f"【选校测评】新线索：{lead['wechat']}"
     try:
         send_wecom_text("新留资线索\n" + summary)

@@ -77,8 +77,8 @@ cp .env.example .env   # 填写 DEEPSEEK_API_KEY（通知配置可选，见下�
 |------|------|------|
 | GET | `/health` | 健康检查 |
 | GET | `/api/v1/ping-deepseek` | DeepSeek 链路连通性验证 |
-| POST | `/api/v1/evaluate` | 选校测评：`{gpa, major, target_country, school_tier?, degree?, language_type?, language_score?}` → 三档 6 校（选填项填了才参与推荐） |
-| POST | `/api/v1/leads` | 留资：`{wechat, phone, gpa?, major?, target_country?, school_tier?, degree?, language_type?, language_score?}` → `{id, message}` |
+| POST | `/api/v1/evaluate` | 选校测评：`{gpa, major, target_country, school_tier?, degree?, language_type?, language_score?}` → 三档 6 校及服务端 `report_id` |
+| POST | `/api/v1/leads` | 留资：`{wechat, phone, report_id?, gpa?, major?, target_country?, school_tier?, degree?, language_type?, language_score?}` → `{id, message}` |
 | GET | `/api/v1/leads` | 线索列表（数据查看界面用）：需请求头 `X-Admin-Token` 携带口令（配置了 `ADMIN_TOKEN` 时） |
 
 错误统一为 `{"detail": "中文提示"}`：参数校验失败 422、AI 服务不可用 502、其他异常 500。
@@ -100,7 +100,7 @@ bash scripts/smoke_test.sh
 # 配置了 ADMIN_TOKEN 时需透传口令：TOKEN=你的口令 bash scripts/smoke_test.sh
 ```
 
-覆盖：健康检查、GPA/手机号等参数校验、测评真实调用、留资入库（含选填字段）、线索列表、数据查看页、首页可访问。
+覆盖：健康检查、GPA/手机号等参数校验、测评真实调用、服务端报告关联、留资入库（含选填字段）、线索列表、数据查看页、首页可访问。
 
 ## 部署（生产）
 

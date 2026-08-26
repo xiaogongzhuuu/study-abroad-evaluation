@@ -79,6 +79,14 @@ check_status "测评接口 → 200" "${status#__STATUS__:}" 200
 check "返回冲刺档" "$body" "冲刺"
 check "返回匹配档" "$body" "匹配"
 check "返回保底档" "$body" "保底"
+report_id=$(printf '%s' "$body" | python3 -c 'import json,sys; print(json.load(sys.stdin).get("report_id", ""))' 2>/dev/null || true)
+if [ -n "$report_id" ]; then
+  echo "✅ 测评报告已获得服务端 report_id"
+  PASS=$((PASS + 1))
+else
+  echo "❌ 测评响应缺少 report_id"
+  FAIL=$((FAIL + 1))
+fi
 
 echo "== 4. 留资接口 =="
 # 手机号格式错误
@@ -89,14 +97,16 @@ body=${resp%$'\n'*}; status=${resp##*$'\n'}
 check_status "手机号格式错误 → 422" "${status#__STATUS__:}" 422
 check "手机号错误提示中文" "$body" "手机号"
 
-# 正常留资（同时验证数据入库，带选填背景字段）
+# 正常留资（通过服务端生成的 report_id 关联测评报告）
 count_before=$(python3 -c "import sqlite3;print(sqlite3.connect('${DB_PATH}').execute('SELECT COUNT(*) FROM leads').fetchone()[0])" 2>/dev/null || echo 0)
 resp=$(request -X POST "${BASE_URL}/api/v1/leads" \
   -H 'Content-Type: application/json' \
-  -d '{"wechat":"smoke_test","phone":"13800138000","gpa":3.6,"major":"计算机科学","target_country":"美国","school_tier":"985","degree":"硕士","language_type":"雅思","language_score":7}')
+  -d "{\"wechat\":\"smoke_test\",\"phone\":\"13800138000\",\"gpa\":3.6,\"major\":\"计算机科学\",\"target_country\":\"美国\",\"school_tier\":\"985\",\"degree\":\"硕士\",\"language_type\":\"雅思\",\"language_score\":7,\"report_id\":\"${report_id}\"}")
 body=${resp%$'\n'*}; status=${resp##*$'\n'}
 check_status "正常留资 → 200" "${status#__STATUS__:}" 200
 check "返回留资成功" "$body" "留资成功"
+resp=$(request -H "X-Admin-Token: ${TOKEN:-}" "${BASE_URL}/api/v1/leads")
+check "报告已通过 report_id 入库" "${resp%$'\n'*}" "$report_id"
 count_after=$(python3 -c "import sqlite3;print(sqlite3.connect('${DB_PATH}').execute('SELECT COUNT(*) FROM leads').fetchone()[0])" 2>/dev/null || echo 0)
 if [ "$count_after" -gt "$count_before" ]; then
   echo "✅ 留资数据已入库（${count_before} → ${count_after} 条）"

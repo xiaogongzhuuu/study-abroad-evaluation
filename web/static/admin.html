@@ -47,6 +47,7 @@
               <th>院校档次</th>
               <th>学位</th>
               <th>语言成绩</th>
+              <th>报告</th>
             </tr>
           </thead>
           <tbody id="leads-body"></tbody>
@@ -55,6 +56,18 @@
       <p class="empty-tip" id="empty-tip" hidden>暂无留资数据</p>
     </section>
   </main>
+
+  <!-- 测评报告弹窗（P1：查看该留资对应的选校推荐报告） -->
+  <div class="modal-overlay" id="report-overlay" hidden>
+    <div class="modal report-modal" role="dialog" aria-modal="true" aria-labelledby="report-title">
+      <div class="report-head">
+        <h2 class="modal-title" id="report-title">测评报告</h2>
+        <button type="button" class="report-close" id="report-close" aria-label="关闭">✕</button>
+      </div>
+      <p class="report-meta" id="report-meta"></p>
+      <div id="report-body"></div>
+    </div>
+  </div>
 
   <!-- 访问口令弹窗 -->
   <div class="modal-overlay" id="token-overlay" hidden>

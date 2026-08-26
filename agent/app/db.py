@@ -1,6 +1,7 @@
 import sqlite3
 from datetime import datetime, timezone
 from pathlib import Path
+from uuid import uuid4
 
 # 数据库文件放在项目根目录 data/ 下（已被 .gitignore 忽略）
 DB_PATH = Path(__file__).resolve().parents[2] / "data" / "leads.db"
@@ -31,6 +32,15 @@ def init_db() -> None:
                 )
                 """
             )
+            conn.execute(
+                """
+                CREATE TABLE IF NOT EXISTS reports (
+                    id TEXT PRIMARY KEY,
+                    result_json TEXT NOT NULL,
+                    created_at TEXT NOT NULL
+                )
+                """
+            )
             _migrate(conn)
     finally:
         conn.close()
@@ -42,6 +52,8 @@ _EXTRA_COLUMNS = {
     "degree": "TEXT",
     "language_type": "TEXT",
     "language_score": "REAL",
+    "result_json": "TEXT",
+    "report_id": "TEXT",
 }
 
 
@@ -63,6 +75,7 @@ def insert_lead(
     degree: str | None = None,
     language_type: str | None = None,
     language_score: float | None = None,
+    report_id: str | None = None,
 ) -> dict:
     """插入一条留资记录，返回完整记录（含 id 与 created_at）。"""
     created_at = datetime.now(timezone.utc).isoformat()
@@ -73,15 +86,18 @@ def insert_lead(
                 """
                 INSERT INTO leads (
                     wechat, phone, gpa, major, target_country,
-                    school_tier, degree, language_type, language_score, created_at
+                    school_tier, degree, language_type, language_score,
+                    report_id, created_at
                 )
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 """,
                 (
                     wechat, phone, gpa, major, target_country,
-                    school_tier, degree, language_type, language_score, created_at,
+                    school_tier, degree, language_type, language_score,
+                    report_id, created_at,
                 ),
             )
+            report = get_report(report_id, conn=conn) if report_id else None
             return {
                 "id": int(cur.lastrowid),
                 "wechat": wechat,
@@ -93,6 +109,8 @@ def insert_lead(
                 "degree": degree,
                 "language_type": language_type,
                 "language_score": language_score,
+                "report_id": report_id,
+                "result_json": report["result_json"] if report else None,
                 "created_at": created_at,
             }
     finally:
@@ -104,8 +122,49 @@ def list_leads() -> list[dict]:
     conn = _connect()
     try:
         rows = conn.execute(
-            "SELECT * FROM leads ORDER BY id DESC"
+            """
+            SELECT leads.*, reports.result_json AS report_result_json
+            FROM leads
+            LEFT JOIN reports ON reports.id = leads.report_id
+            ORDER BY leads.id DESC
+            """
         ).fetchall()
-        return [dict(row) for row in rows]
+        result = []
+        for row in rows:
+            lead = dict(row)
+            report_result = lead.pop("report_result_json")
+            lead["result_json"] = report_result or lead.get("result_json")
+            result.append(lead)
+        return result
     finally:
         conn.close()
+
+
+def insert_report(result_json: str) -> str:
+    """保存服务端生成的测评报告，返回不可猜测的关联 ID。"""
+    report_id = str(uuid4())
+    created_at = datetime.now(timezone.utc).isoformat()
+    conn = _connect()
+    try:
+        with conn:
+            conn.execute(
+                "INSERT INTO reports (id, result_json, created_at) VALUES (?, ?, ?)",
+                (report_id, result_json, created_at),
+            )
+    finally:
+        conn.close()
+    return report_id
+
+
+def get_report(report_id: str, conn: sqlite3.Connection | None = None) -> dict | None:
+    """按 ID 读取服务端报告；不存在时返回 None。"""
+    owns_conn = conn is None
+    active_conn = conn or _connect()
+    try:
+        row = active_conn.execute(
+            "SELECT id, result_json, created_at FROM reports WHERE id = ?", (report_id,)
+        ).fetchone()
+        return dict(row) if row else None
+    finally:
+        if owns_conn:
+            active_conn.close()

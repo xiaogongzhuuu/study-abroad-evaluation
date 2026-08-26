@@ -1,4 +1,5 @@
 from typing import Annotated
+from uuid import UUID
 
 from pydantic import BaseModel, Field, StringConstraints, model_validator
 
@@ -44,11 +45,12 @@ class School(BaseModel):
 
 class Tier(BaseModel):
     level: str = Field(..., description="档位：冲刺 / 匹配 / 保底")
-    schools: list[School] = Field(..., description="该档位学校列表（每档 2 所）")
+    schools: list[School] = Field(..., min_length=2, max_length=2, description="该档位学校列表（每档 2 所）")
 
 
 class EvaluateResponse(BaseModel):
     tiers: list[Tier] = Field(..., description="三档推荐结果")
+    report_id: UUID | None = Field(None, description="服务端保存的报告 ID，留资时用于关联")
 
 
 class LeadRequest(BaseModel):
@@ -63,6 +65,7 @@ class LeadRequest(BaseModel):
     degree: str | None = Field(None, max_length=10, description="意向学位")
     language_type: str | None = Field(None, max_length=20, description="语言成绩类型")
     language_score: float | None = Field(None, ge=0.5, le=200, description="语言成绩分数")
+    report_id: UUID | None = Field(None, description="测评接口返回的报告 ID")
 
     @model_validator(mode="before")
     @classmethod

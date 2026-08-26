@@ -16,6 +16,11 @@ const tokenForm = document.getElementById('token-form');
 const tokenInput = document.getElementById('token-input');
 const tokenError = document.getElementById('token-error');
 
+const reportOverlay = document.getElementById('report-overlay');
+const reportClose = document.getElementById('report-close');
+const reportMeta = document.getElementById('report-meta');
+const reportBody = document.getElementById('report-body');
+
 const TOKEN_KEY = 'adminToken';
 
 let leads = [];
@@ -97,10 +102,95 @@ function render() {
       td.textContent = value;
       tr.appendChild(td);
     });
+
+    // 报告列：有结果入库的线索可点开查看选校推荐（P1）
+    const reportTd = document.createElement('td');
+    if (lead.result_json) {
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'btn-ghost view-report-btn';
+      btn.textContent = '查看';
+      btn.addEventListener('click', () => openReportModal(lead));
+      reportTd.appendChild(btn);
+    } else {
+      reportTd.textContent = '—';
+    }
+    tr.appendChild(reportTd);
+
     leadsBody.appendChild(tr);
   }
   emptyTip.hidden = leads.length > 0;
 }
+
+// 测评报告弹窗（P1）
+const LEVEL_CLASS = { 冲刺: 'reach', 匹配: 'match', 保底: 'safety' };
+
+function openReportModal(lead) {
+  reportMeta.textContent = [
+    `微信 ${lead.wechat}`,
+    lead.gpa != null ? `GPA ${lead.gpa}` : '',
+    lead.major || '',
+    lead.target_country || '',
+  ]
+    .filter(Boolean)
+    .join(' · ');
+
+  reportBody.innerHTML = '';
+  let tiers;
+  try {
+    tiers = JSON.parse(lead.result_json).tiers;
+  } catch (_) {
+    tiers = null;
+  }
+  if (!Array.isArray(tiers) || tiers.length === 0) {
+    reportBody.textContent = '报告数据异常，无法解析';
+    reportOverlay.hidden = false;
+    return;
+  }
+
+  for (const tier of tiers) {
+    const card = document.createElement('div');
+    card.className = 'tier-card';
+
+    const header = document.createElement('div');
+    header.className = `tier-header ${LEVEL_CLASS[tier.level] || 'match'}`;
+    header.textContent = tier.level;
+
+    const body = document.createElement('div');
+    body.className = 'tier-body';
+    for (const school of tier.schools || []) {
+      const item = document.createElement('div');
+      item.className = 'school-item';
+
+      const name = document.createElement('div');
+      name.className = 'school-name';
+      name.textContent = school.name;
+
+      const reason = document.createElement('div');
+      reason.className = 'school-reason';
+      reason.textContent = school.reason;
+
+      item.appendChild(name);
+      item.appendChild(reason);
+      body.appendChild(item);
+    }
+
+    card.appendChild(header);
+    card.appendChild(body);
+    reportBody.appendChild(card);
+  }
+  reportOverlay.hidden = false;
+}
+
+reportClose.addEventListener('click', () => {
+  reportOverlay.hidden = true;
+});
+reportOverlay.addEventListener('click', (e) => {
+  if (e.target === reportOverlay) reportOverlay.hidden = true;
+});
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape' && !reportOverlay.hidden) reportOverlay.hidden = true;
+});
 
 // 口令弹窗
 function openTokenModal() {

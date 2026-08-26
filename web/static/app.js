@@ -15,6 +15,7 @@ const leadForm = document.getElementById('lead-form');
 const leadSubmitBtn = document.getElementById('lead-submit');
 
 let currentContext = null; // 最近一次测评背景 { gpa, major, target_country }
+let currentReportId = null; // 服务端保存的报告 ID，留资时只提交该 ID
 
 // 档位 → CSS 类名映射
 const LEVEL_CLASS = {
@@ -145,6 +146,7 @@ form.addEventListener('submit', async (e) => {
       language_type: langType || null,
       language_score: Number.isNaN(langScore) ? null : langScore,
     };
+    currentReportId = data.report_id;
     renderTiers(data.tiers);
     resultArea.hidden = false;
     resultArea.scrollIntoView({ behavior: 'smooth' });
@@ -259,6 +261,7 @@ leadForm.addEventListener('submit', async (e) => {
         degree: currentContext?.degree ?? null,
         language_type: currentContext?.language_type ?? null,
         language_score: currentContext?.language_score ?? null,
+        report_id: currentReportId,
       }),
     });
     if (!res.ok) throw new Error(await serverMessage(res));

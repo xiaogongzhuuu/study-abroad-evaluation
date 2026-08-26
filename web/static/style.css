@@ -421,6 +421,52 @@ main.container {
   font-size: 14px;
 }
 
+/* 测评报告弹窗（P1：数据查看界面） */
+.report-modal {
+  max-width: 560px;
+  max-height: 80vh;
+  overflow-y: auto;
+}
+
+.report-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.report-close {
+  background: transparent;
+  border: none;
+  font-size: 18px;
+  color: var(--text-muted);
+  cursor: pointer;
+  padding: 4px 8px;
+}
+
+.report-close:hover {
+  color: var(--text);
+}
+
+.report-meta {
+  color: var(--text-muted);
+  font-size: 13px;
+  margin-bottom: 16px;
+}
+
+.view-report-btn {
+  padding: 4px 12px;
+  font-size: 13px;
+  border-radius: 6px;
+}
+
+#report-body .tier-card {
+  margin-bottom: 12px;
+}
+
+#report-body .tier-card:last-child {
+  margin-bottom: 0;
+}
+
 /* 加载动画 */
 .spinner {
   display: inline-block;
