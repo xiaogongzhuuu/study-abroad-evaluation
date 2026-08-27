@@ -165,8 +165,8 @@ form.addEventListener('submit', async (e) => {
 function setLoading(loading) {
   submitBtn.disabled = loading;
   submitBtn.innerHTML = loading
-    ? '<span class="spinner"></span>测评中...'
-    : '开始测评';
+    ? '<span class="spinner"></span>正在分析申请背景...'
+    : '生成我的选校建议 <span aria-hidden="true">→</span>';
 }
 
 function renderTiers(tiers) {

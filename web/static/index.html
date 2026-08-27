@@ -3,170 +3,158 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>智能选校测评</title>
+  <meta name="description" content="30 秒填写背景，获得冲刺、匹配、保底三档海外院校建议。" />
+  <title>智能选校测评｜途策留学</title>
   <link rel="icon" type="image/svg+xml" href="/logo.svg" />
   <link rel="stylesheet" href="/style.css" />
 </head>
-<body>
+<body class="evaluation-page">
   <header class="site-header">
-    <div class="container">
-      <div class="logo">
-        <img class="logo-icon" src="/logo.svg" alt="" />
-        <h1 class="logo-text">智能选校测评</h1>
-      </div>
-      <p class="subtitle">30 秒填写背景，AI 为你推荐海外院校</p>
+    <div class="wide-container nav-row">
+      <a class="brand" href="https://tuce.asia/" aria-label="返回途策留学官网">
+        <span class="brand-mark">T</span>
+        <span><strong>TUCE EDUCATION</strong><small>途策留学</small></span>
+      </a>
+      <a class="back-link" href="https://tuce.asia/">返回官网 <span aria-hidden="true">↗</span></a>
     </div>
   </header>
 
-  <main class="container">
-    <!-- 表单区 -->
-    <section class="form-card" id="form-card">
-      <h2 class="section-title">填写你的背景</h2>
-      <form id="evaluate-form" novalidate>
-        <div class="field">
-          <label for="gpa">GPA</label>
-          <input
-            type="number"
-            id="gpa"
-            name="gpa"
-            step="0.01"
-            min="0"
-            max="5"
-            placeholder="例：3.6"
-            required
-          />
-          <span class="hint">4 分制或 5 分制均可</span>
-        </div>
+  <main>
+    <section class="hero-section">
+      <div class="wide-container hero-grid">
+        <div class="hero-copy">
+          <p class="eyebrow">AI SCHOOL MATCH · 智能选校</p>
+          <h1>先看清位置，<br />再决定去哪里。</h1>
+          <p class="hero-lead">输入你的学术背景与申请方向，快速获得冲刺、匹配、保底三档院校建议，为下一步规划建立清晰起点。</p>
 
-        <div class="field">
-          <label for="major">申请专业</label>
-          <input
-            type="text"
-            id="major"
-            name="major"
-            placeholder="例：计算机科学 / 金融"
-            required
-          />
-        </div>
-
-        <div class="field">
-          <label for="country">目标国家</label>
-          <select id="country" name="country" required>
-            <option value="" disabled selected>请选择国家</option>
-            <option value="美国">美国</option>
-            <option value="英国">英国</option>
-            <option value="加拿大">加拿大</option>
-            <option value="澳大利亚">澳大利亚</option>
-            <option value="新加坡">新加坡</option>
-            <option value="中国香港">中国香港</option>
-            <option value="其他">其他</option>
-          </select>
-        </div>
-
-        <div class="field-row">
-          <div class="field">
-            <label for="school-tier">本科院校档次<span class="optional-tag">选填</span></label>
-            <select id="school-tier" name="school_tier">
-              <option value="" selected>不填</option>
-              <option value="985">985</option>
-              <option value="211">211</option>
-              <option value="双一流">双一流</option>
-              <option value="普通本科">普通本科</option>
-              <option value="海外本科">海外本科</option>
-            </select>
+          <div class="benefit-list" aria-label="测评特点">
+            <div><span>01</span><p><strong>三档定位</strong><small>冲刺、匹配、保底共 6 所院校</small></p></div>
+            <div><span>02</span><p><strong>背景匹配</strong><small>结合 GPA、专业与目标地区分析</small></p></div>
+            <div><span>03</span><p><strong>顾问解读</strong><small>解锁后可获得一对一定位建议</small></p></div>
           </div>
-          <div class="field">
-            <label for="degree">意向学位<span class="optional-tag">选填</span></label>
-            <select id="degree" name="degree">
-              <option value="" selected>不填</option>
-              <option value="本科">本科</option>
-              <option value="硕士">硕士</option>
-              <option value="博士">博士</option>
-            </select>
+
+          <div class="report-preview" aria-label="报告示例">
+            <div class="preview-head">
+              <span>选校报告预览</span>
+              <small>示例</small>
+            </div>
+            <div class="preview-row"><span class="level-dot reach"></span><b>冲刺</b><span>目标更高，需要亮点支撑</span></div>
+            <div class="preview-row"><span class="level-dot match"></span><b>匹配</b><span>背景契合，重点打磨材料</span></div>
+            <div class="preview-row"><span class="level-dot safety"></span><b>保底</b><span>控制风险，保障申请结果</span></div>
           </div>
         </div>
 
-        <div class="field-row">
-          <div class="field">
-            <label for="lang-type">语言类型<span class="optional-tag">选填</span></label>
-            <select id="lang-type" name="language_type">
-              <option value="" selected>不填</option>
-              <option value="雅思">雅思</option>
-              <option value="托福">托福</option>
-            </select>
+        <section class="form-card" id="form-card" aria-labelledby="form-title">
+          <div class="form-heading">
+            <p>免费 · 约 30 秒</p>
+            <h2 class="section-title" id="form-title">填写你的申请背景</h2>
+            <span>带 <b>*</b> 为必填项，信息越完整，建议越有针对性</span>
           </div>
-          <div class="field">
-            <label for="lang-score">语言成绩<span class="optional-tag">选填</span></label>
-            <input
-              type="number"
-              id="lang-score"
-              name="language_score"
-              step="0.5"
-              min="0"
-              placeholder="例：7.0 / 100"
-            />
-          </div>
-        </div>
+          <form id="evaluate-form" novalidate>
+            <div class="field-row primary-fields">
+              <div class="field">
+                <label for="gpa">GPA <b>*</b></label>
+                <input type="number" id="gpa" name="gpa" step="0.01" min="0" max="5" placeholder="例：3.6" required />
+                <span class="hint">支持 4 分制或 5 分制</span>
+              </div>
+              <div class="field">
+                <label for="country">目标国家/地区 <b>*</b></label>
+                <select id="country" name="country" required>
+                  <option value="" disabled selected>请选择</option>
+                  <option value="美国">美国</option><option value="英国">英国</option>
+                  <option value="加拿大">加拿大</option><option value="澳大利亚">澳大利亚</option>
+                  <option value="新加坡">新加坡</option><option value="中国香港">中国香港</option>
+                  <option value="其他">其他</option>
+                </select>
+              </div>
+            </div>
 
-        <button type="submit" class="btn-primary" id="submit-btn">开始测评</button>
-      </form>
+            <div class="field">
+              <label for="major">申请专业 <b>*</b></label>
+              <input type="text" id="major" name="major" placeholder="例：计算机科学 / 金融 / 教育学" required />
+            </div>
+
+            <div class="form-divider"><span>补充信息</span><small>选填，帮助提高匹配度</small></div>
+
+            <div class="field-row">
+              <div class="field">
+                <label for="school-tier">本科院校背景</label>
+                <select id="school-tier" name="school_tier">
+                  <option value="" selected>暂不填写</option><option value="985">985</option>
+                  <option value="211">211</option><option value="双一流">双一流</option>
+                  <option value="普通本科">普通本科</option><option value="海外本科">海外本科</option>
+                </select>
+              </div>
+              <div class="field">
+                <label for="degree">意向学位</label>
+                <select id="degree" name="degree">
+                  <option value="" selected>暂不填写</option><option value="本科">本科</option>
+                  <option value="硕士">硕士</option><option value="博士">博士</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="field-row">
+              <div class="field">
+                <label for="lang-type">语言类型</label>
+                <select id="lang-type" name="language_type">
+                  <option value="" selected>暂不填写</option><option value="雅思">雅思</option><option value="托福">托福</option>
+                </select>
+              </div>
+              <div class="field">
+                <label for="lang-score">语言成绩</label>
+                <input type="number" id="lang-score" name="language_score" step="0.5" min="0" placeholder="例：7.0 / 100" />
+              </div>
+            </div>
+
+            <button type="submit" class="btn-primary" id="submit-btn">生成我的选校建议 <span aria-hidden="true">→</span></button>
+            <p class="privacy-note">提交测评即表示你同意我们根据所填背景生成初步建议；结果仅供规划参考，不代表录取承诺。</p>
+          </form>
+        </section>
+      </div>
     </section>
 
-    <!-- 结果展示区 -->
-    <section class="result-area" id="result-area" hidden>
-      <h2 class="section-title">你的选校推荐</h2>
-      <p class="result-tip" id="result-tip">部分信息已隐藏，解锁完整报告查看全部推荐理由</p>
-
-      <div class="thank-you" id="thank-you" hidden>
-        <h3 class="thank-you-title">报告已解锁</h3>
-        <p class="thank-you-desc">感谢留下联系方式，顾问将尽快与你联系，请保持电话 / 微信畅通。</p>
+    <section class="trust-strip" aria-label="服务说明">
+      <div class="wide-container trust-grid">
+        <div><strong>策略驱动</strong><span>不是简单按排名罗列学校</span></div>
+        <div><strong>覆盖主流地区</strong><span>美英港新澳加申请方向</span></div>
+        <div><strong>真人顾问复核</strong><span>AI 初筛后提供个性化解读</span></div>
       </div>
+    </section>
 
-      <div class="tiers" id="tiers">
-        <!-- 三档结果卡片由 JS 动态渲染 -->
-      </div>
-
-      <button type="button" class="btn-primary unlock-cta" id="unlock-btn">解锁完整报告</button>
+    <section class="result-wrap wide-container">
+      <section class="result-area" id="result-area" hidden>
+        <div class="result-heading">
+          <div><p class="eyebrow">YOUR SCHOOL LIST</p><h2 class="section-title">你的选校建议</h2></div>
+          <p class="result-tip" id="result-tip">已生成 6 所院校，解锁后查看完整推荐理由</p>
+        </div>
+        <div class="thank-you" id="thank-you" hidden>
+          <h3 class="thank-you-title">完整报告已解锁</h3>
+          <p class="thank-you-desc">顾问将在 24 小时内与你联系，请保持电话和微信畅通。</p>
+        </div>
+        <div class="tiers" id="tiers"></div>
+        <button type="button" class="btn-primary unlock-cta" id="unlock-btn">解锁完整报告与顾问解读</button>
+      </section>
     </section>
   </main>
 
-  <!-- 留资弹窗 -->
+  <footer class="site-footer">
+    <div class="wide-container"><span>TUCE EDUCATION · 途策留学</span><small>本测评结果为初步建议，最终申请方案应结合完整背景由专业顾问评估。</small></div>
+  </footer>
+
   <div class="modal-overlay" id="modal-overlay" hidden>
     <div class="modal" role="dialog" aria-modal="true" aria-labelledby="modal-title">
+      <p class="eyebrow">UNLOCK REPORT</p>
       <h2 class="modal-title" id="modal-title">解锁完整选校报告</h2>
-      <p class="modal-desc">留下联系方式，顾问将为你 1 对 1 解读报告并答疑</p>
-
+      <p class="modal-desc">留下联系方式，专业顾问将在 24 小时内提供一对一报告解读。</p>
       <form id="lead-form" novalidate>
-        <div class="field">
-          <label for="wechat">微信号</label>
-          <input
-            type="text"
-            id="wechat"
-            name="wechat"
-            placeholder="请输入微信号"
-            required
-          />
-        </div>
-
-        <div class="field">
-          <label for="phone">手机号</label>
-          <input
-            type="tel"
-            id="phone"
-            name="phone"
-            placeholder="请输入手机号"
-            required
-          />
-        </div>
-
-        <div class="modal-actions">
-          <button type="button" class="btn-ghost" id="modal-cancel">暂不</button>
-          <button type="submit" class="btn-primary" id="lead-submit">解锁完整报告</button>
-        </div>
+        <div class="field"><label for="wechat">微信号</label><input type="text" id="wechat" name="wechat" placeholder="请输入微信号" required /></div>
+        <div class="field"><label for="phone">手机号</label><input type="tel" id="phone" name="phone" placeholder="请输入 11 位手机号" required /></div>
+        <p class="privacy-note modal-privacy">联系方式仅用于本次留学咨询与回访，我们会妥善保护你的个人信息。</p>
+        <div class="modal-actions"><button type="button" class="btn-ghost" id="modal-cancel">暂不</button><button type="submit" class="btn-primary" id="lead-submit">确认解锁</button></div>
       </form>
     </div>
   </div>
-
   <script src="/app.js"></script>
 </body>
 </html>
