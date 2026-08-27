@@ -1,6 +1,17 @@
-# 智能选校测评工具
+# 途策留学 · AI 智能选校测评
 
-面向学生的智能选校测评工具：学生 30 秒填写 GPA / 专业 / 目标国家，AI（DeepSeek）立即给出三档 6 校推荐；完整推荐理由被模糊遮罩，需留联系方式解锁；留资后自动推企业微信群消息 + 发邮件通知顾问跟进。
+一个可独立部署的留学选校与线索转化应用。学生填写 GPA、专业和目标国家/地区后，系统通过 DeepSeek 生成冲刺、匹配、保底三档院校建议；用户解锁完整报告后，线索会写入本地数据库，并可通过企业微信和邮件通知顾问。
+
+> 本项目是途策留学的业务原型。AI 生成结果仅供申请规划参考，不构成录取承诺。
+
+## 功能亮点
+
+- **30 秒完成测评**：核心信息精简，支持院校背景、学位与语言成绩等选填项
+- **三档选校建议**：生成冲刺、匹配、保底共 6 所院校及推荐理由
+- **报告解锁闭环**：服务端保存报告并关联联系方式，避免前端伪造报告编号
+- **顾问及时跟进**：支持企业微信群机器人和 SMTP 邮件异步通知
+- **线索管理后台**：口令保护、数据统计、刷新与 CSV 导出
+- **无需前端构建**：FastAPI 同时提供 API 和静态页面，适合快速部署
 
 ## 核心流程
 
@@ -39,22 +50,21 @@ study-abroad-evaluation/
 └── scripts/smoke_test.sh   # 全链路冒烟测试
 ```
 
-## 快速开始（本地开发）
+## 快速开始
 
 环境要求：Python 3.10+
 
 ```bash
 cd agent
 python3 -m venv .venv
-.venv/bin/pip install -r requirements.txt -i https://pypi.tuna.tsinghua.edu.cn/simple
+.venv/bin/pip install -r requirements.txt
 
 cp .env.example .env   # 填写 DEEPSEEK_API_KEY（通知配置可选，见下表）
 
-# 启动（必须用 python -m uvicorn 方式，见下方「常见问题」）
 .venv/bin/python -m uvicorn app.main:app --port 8000
 ```
 
-浏览器打开 <http://localhost:8000> 即可使用。
+浏览器打开 <http://localhost:8000> 即可使用，管理后台位于 <http://localhost:8000/admin>。
 
 ## 配置项（agent/.env）
 
@@ -92,6 +102,13 @@ cp .env.example .env   # 填写 DEEPSEEK_API_KEY（通知配置可选，见下�
 
 ## 测试
 
+运行自动化测试：
+
+```bash
+cd agent
+.venv/bin/python -m pytest
+```
+
 服务启动后执行全链路冒烟测试（含真实 DeepSeek 调用，约 1 分钟）：
 
 ```bash
@@ -101,6 +118,13 @@ bash scripts/smoke_test.sh
 ```
 
 覆盖：健康检查、GPA/手机号等参数校验、测评真实调用、服务端报告关联、留资入库（含选填字段）、线索列表、数据查看页、首页可访问。
+
+## 隐私与安全
+
+- 不要提交 `agent/.env`、真实 API Key、Webhook、SMTP 授权码或 `data/leads.db`；这些文件已在 `.gitignore` 中排除。
+- 公网部署前必须设置强随机 `ADMIN_TOKEN`，并通过 HTTPS 提供服务。
+- 线索数据包含微信号、手机号等个人信息。请依据适用的隐私法规取得用户授权，并设置访问控制、保存期限和删除流程。
+- 当前 SQLite 方案适合单实例和轻量使用；多实例部署时建议迁移到 PostgreSQL 等集中式数据库。
 
 ## 部署（生产）
 
@@ -145,6 +169,10 @@ sudo systemctl daemon-reload && sudo systemctl enable --now school-eval
 - **反代 + HTTPS**：前端含表单收集联系方式，公网环境建议用 Nginx / Caddy 反代并配置 HTTPS；静态页面已由 FastAPI 托管，反向代理只需转发 8000 端口即可。
 - **数据库备份**：定期备份 `data/leads.db`（留资线索的唯一存储），如 `cp data/leads.db data/backups/leads-$(date +%F).db`。
 - **日志**：系统日志中关键字 `未处理异常`、`企微通知失败`、`邮件通知失败` 可用于排障。
+
+## 项目状态与参与方式
+
+项目目前处于可运行的业务原型阶段，欢迎通过 GitHub Issues 提交问题或建议，也欢迎提交 Pull Request。提交改动前请先运行自动化测试，并确保示例配置中不包含真实凭据或用户数据。
 
 ## 常见问题
 
