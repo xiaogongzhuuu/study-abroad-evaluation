@@ -1,5 +1,9 @@
 # 途策留学 · AI 智能选校测评
 
+[![Python](https://img.shields.io/badge/Python-3.10%2B-3776AB?logo=python&logoColor=white)](https://www.python.org/)
+[![FastAPI](https://img.shields.io/badge/FastAPI-0.115%2B-009688?logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com/)
+[![DeepSeek](https://img.shields.io/badge/LLM-DeepSeek-4D6BFE)](https://www.deepseek.com/)
+
 一个可独立部署的留学选校与线索转化应用。学生填写 GPA、专业和目标国家/地区后，系统通过 DeepSeek 生成冲刺、匹配、保底三档院校建议；用户解锁完整报告后，线索会写入本地数据库，并可通过企业微信和邮件通知顾问。
 
 > 本项目是途策留学的业务原型。AI 生成结果仅供申请规划参考，不构成录取承诺。
@@ -20,6 +24,17 @@
 3. 完整理由被模糊遮罩，需留微信 / 手机号解锁
 4. 留资写入 SQLite 并展示完整报告 + 感谢页
 5. 后台异步推送企微群消息 + 邮件给顾问
+
+```mermaid
+flowchart LR
+    A[填写申请背景] --> B[FastAPI 参数校验]
+    B --> C[DeepSeek 生成三档建议]
+    C --> D[保存报告并返回 report_id]
+    D --> E[用户留资解锁完整报告]
+    E --> F[(SQLite 线索库)]
+    E --> G[企微 / 邮件通知顾问]
+    F --> H[口令保护的管理后台]
+```
 
 ## 技术栈
 
@@ -64,7 +79,11 @@ cp .env.example .env   # 填写 DEEPSEEK_API_KEY（通知配置可选，见下�
 .venv/bin/python -m uvicorn app.main:app --port 8000
 ```
 
-浏览器打开 <http://localhost:8000> 即可使用，管理后台位于 <http://localhost:8000/admin>。
+启动后可访问：
+
+- 用户测评页：<http://localhost:8000>
+- 线索管理后台：<http://localhost:8000/admin>
+- Swagger API 文档：<http://localhost:8000/docs>
 
 ## 配置项（agent/.env）
 
@@ -79,7 +98,7 @@ cp .env.example .env   # 填写 DEEPSEEK_API_KEY（通知配置可选，见下�
 | `NOTIFY_EMAIL_TO` | 可选 | 收件顾问邮箱，多个用英文逗号分隔 |
 | `ADMIN_TOKEN` | 可选 | 数据查看界面（/admin.html）访问口令。留空则开放访问，**公网部署务必设置** |
 
-通知两项都留空不影响使用，只是顾问收不到线索提醒。改配置后需重启服务。
+通知渠道留空不影响测评和留资，只是顾问收不到对应提醒。修改配置后需重启服务。
 
 ## API 一览
 
@@ -173,6 +192,8 @@ sudo systemctl daemon-reload && sudo systemctl enable --now school-eval
 ## 项目状态与参与方式
 
 项目目前处于可运行的业务原型阶段，欢迎通过 GitHub Issues 提交问题或建议，也欢迎提交 Pull Request。提交改动前请先运行自动化测试，并确保示例配置中不包含真实凭据或用户数据。
+
+当前版本主要面向单机构、单实例部署，尚未包含用户账号、多租户、线索删除流程、限流和生产级监控。正式商用前应补齐隐私授权、数据生命周期管理、接口限流与可观测性。
 
 ## 常见问题
 
