@@ -13,6 +13,7 @@ const modalOverlay = document.getElementById('modal-overlay');
 const modalCancel = document.getElementById('modal-cancel');
 const leadForm = document.getElementById('lead-form');
 const leadSubmitBtn = document.getElementById('lead-submit');
+const fillExampleBtn = document.getElementById('fill-example-btn');
 
 let currentContext = null; // 最近一次测评背景 { gpa, major, target_country }
 let currentReportId = null; // 服务端保存的报告 ID，留资时只提交该 ID
@@ -26,6 +27,19 @@ const LEVEL_CLASS = {
 
 // 中国大陆手机号：1 开头共 11 位
 const PHONE_RE = /^1[3-9]\d{9}$/;
+
+// 一键填入演示背景，仅填表、不自动提交，方便用户了解格式与修改内容
+fillExampleBtn.addEventListener('click', () => {
+  document.getElementById('gpa').value = '3.7';
+  document.getElementById('major').value = '计算机科学';
+  document.getElementById('country').value = '美国';
+  document.getElementById('school-tier').value = '211';
+  document.getElementById('degree').value = '硕士';
+  document.getElementById('lang-type').value = '雅思';
+  document.getElementById('lang-score').value = '7';
+  clearFieldErrors(form);
+  hideFormError(form);
+});
 
 // ---- 表单校验与错误提示（D7） ----
 

@@ -70,7 +70,10 @@ a { color: inherit; }
 .form-card, .result-area { background: var(--card); border: 1px solid rgba(16,29,50,.08); border-radius: var(--radius); box-shadow: var(--shadow); }
 .form-card { padding: 34px 36px 30px; }
 .form-heading { margin-bottom: 24px; }
-.form-heading > p { color: var(--gold); font-size: 12px; font-weight: 700; letter-spacing: 1px; }
+.form-heading-top { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.form-heading-top > p { color: var(--gold); font-size: 12px; font-weight: 700; letter-spacing: 1px; }
+.example-fill-btn { background: transparent; border: 0; color: var(--primary); cursor: pointer; font-size: 12px; font-weight: 650; padding: 3px 0; text-decoration: underline; text-decoration-color: var(--gold-light); text-underline-offset: 4px; }
+.example-fill-btn:hover { color: var(--gold); }
 .section-title { color: var(--navy); font-family: Georgia, "Noto Serif SC", "Songti SC", serif; font-size: 24px; line-height: 1.35; font-weight: 600; }
 .form-heading .section-title { margin: 4px 0 6px; }
 .form-heading > span { color: var(--text-muted); font-size: 12px; }
