@@ -6,7 +6,7 @@
   <meta name="description" content="30 秒填写背景，获得冲刺、匹配、保底三档海外院校建议。" />
   <title>智能选校测评｜途策留学</title>
   <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-  <link rel="stylesheet" href="/style.css" />
+  <link rel="stylesheet" href="/style.css?v=2" />
 </head>
 <body class="evaluation-page">
   <header class="site-header">
@@ -40,14 +40,14 @@
             </div>
             <div class="preview-row"><span class="level-dot reach"></span><b>冲刺</b><span>目标更高，需要亮点支撑</span></div>
             <div class="preview-row"><span class="level-dot match"></span><b>匹配</b><span>背景契合，重点打磨材料</span></div>
-            <div class="preview-row"><span class="level-dot safety"></span><b>保底</b><span>控制风险，保障申请结果</span></div>
+            <div class="preview-row"><span class="level-dot safety"></span><b>保底</b><span>相对稳健，仍需核实申请条件</span></div>
           </div>
         </div>
 
         <section class="form-card" id="form-card" aria-labelledby="form-title">
           <div class="form-heading">
             <div class="form-heading-top">
-              <p>免费 · 约 30 秒</p>
+              <p>免费 · 约 30 秒填写</p>
               <button type="button" class="example-fill-btn" id="fill-example-btn">示例填写</button>
             </div>
             <h2 class="section-title" id="form-title">填写你的申请背景</h2>
@@ -56,10 +56,20 @@
           <form id="evaluate-form" novalidate>
             <div class="field-row primary-fields">
               <div class="field">
-                <label for="gpa">GPA <b>*</b></label>
-                <input type="number" id="gpa" name="gpa" step="0.01" min="0" max="5" placeholder="例：3.6" required />
-                <span class="hint">支持 4 分制或 5 分制</span>
+                <label for="gpa">GPA / 均分 <b>*</b></label>
+                <input type="number" id="gpa" name="gpa" step="0.01" min="0.01" max="4" placeholder="例：3.6" aria-describedby="gpa-hint" required />
+                <span class="hint" id="gpa-hint">按成绩单原始分数填写，满分 4</span>
               </div>
+              <div class="field">
+                <label for="gpa-scale">成绩计分制 <b>*</b></label>
+                <select id="gpa-scale" name="gpa_scale" required>
+                  <option value="4" selected>4 分制</option>
+                  <option value="5">5 分制</option>
+                  <option value="100">百分制</option>
+                </select>
+              </div>
+            </div>
+            <div class="field-row">
               <div class="field">
                 <label for="country">目标国家/地区 <b>*</b></label>
                 <select id="country" name="country" required>
@@ -70,18 +80,22 @@
                   <option value="其他">其他</option>
                 </select>
               </div>
+              <div class="field" id="country-other-field" hidden>
+                <label for="country-other">具体国家/地区 <b>*</b></label>
+                <input id="country-other" name="country_other" type="text" maxlength="30" placeholder="例：德国" disabled />
+              </div>
             </div>
 
             <div class="field">
               <label for="major">申请专业 <b>*</b></label>
-              <input type="text" id="major" name="major" placeholder="例：计算机科学 / 金融 / 教育学" required />
+              <input type="text" id="major" name="major" maxlength="50" placeholder="例：计算机科学 / 金融 / 教育学" required />
             </div>
 
             <div class="form-divider"><span>补充信息</span><small>选填，帮助提高匹配度</small></div>
 
             <div class="field-row">
               <div class="field">
-                <label for="school-tier">本科院校背景</label>
+                <label for="school-tier">本科院校背景（适用时填写）</label>
                 <select id="school-tier" name="school_tier">
                   <option value="" selected>暂不填写</option><option value="985">985</option>
                   <option value="211">211</option><option value="双一流">双一流</option>
@@ -101,17 +115,19 @@
               <div class="field">
                 <label for="lang-type">语言类型</label>
                 <select id="lang-type" name="language_type">
-                  <option value="" selected>暂不填写</option><option value="雅思">雅思</option><option value="托福">托福</option>
+                  <option value="" selected>暂不填写</option><option value="雅思">雅思</option><option value="托福">托福（0–120 分制）</option><option value="托福（1–6分制）">托福（1–6 分制）</option>
                 </select>
               </div>
               <div class="field">
                 <label for="lang-score">语言成绩</label>
-                <input type="number" id="lang-score" name="language_score" step="0.5" min="0" placeholder="例：7.0 / 100" />
+                <input type="number" id="lang-score" name="language_score" step="0.5" min="0" placeholder="先选择语言类型" aria-describedby="language-hint" />
+                <span class="hint" id="language-hint">语言类型与总分需一起填写；未考可留空</span>
               </div>
             </div>
 
             <button type="submit" class="btn-primary" id="submit-btn">生成我的选校建议 <span aria-hidden="true">→</span></button>
-            <p class="privacy-note">提交测评即表示你同意我们根据所填背景生成初步建议；结果仅供规划参考，不代表录取承诺。</p>
+            <p class="hint" id="evaluate-status" role="status" hidden></p>
+            <p class="privacy-note">建议由 AI 根据所填背景生成，未实时核验院校招生信息。结果仅供规划参考，三档定位均不代表录取承诺。</p>
           </form>
         </section>
       </div>
@@ -133,7 +149,7 @@
         </div>
         <div class="thank-you" id="thank-you" hidden>
           <h3 class="thank-you-title">完整报告已解锁</h3>
-          <p class="thank-you-desc">顾问将在 24 小时内与你联系，请保持电话和微信畅通。</p>
+          <p class="thank-you-desc">联系方式已提交，供顾问后续跟进；具体申请条件请以院校官方信息为准。</p>
         </div>
         <div class="tiers" id="tiers"></div>
         <button type="button" class="btn-primary unlock-cta" id="unlock-btn">解锁完整报告与顾问解读</button>
@@ -145,19 +161,33 @@
     <div class="wide-container"><span>TUCE EDUCATION · 途策留学</span><small>本测评结果为初步建议，最终申请方案应结合完整背景由专业顾问评估。</small></div>
   </footer>
 
-  <div class="modal-overlay" id="modal-overlay" hidden>
-    <div class="modal" role="dialog" aria-modal="true" aria-labelledby="modal-title">
-      <p class="eyebrow">UNLOCK REPORT</p>
-      <h2 class="modal-title" id="modal-title">解锁完整选校报告</h2>
-      <p class="modal-desc">留下联系方式，专业顾问将在 24 小时内提供一对一报告解读。</p>
+  <div class="modal-overlay" id="modal-overlay" aria-hidden="true" hidden>
+    <div class="modal lead-modal" role="dialog" aria-modal="true" aria-labelledby="modal-title" aria-describedby="modal-desc">
+      <button type="button" class="modal-close" id="modal-close" aria-label="关闭留资窗口"></button>
+      <div class="lead-modal-head">
+        <span class="unlock-badge" aria-hidden="true">✓</span>
+        <div>
+          <p class="eyebrow">REPORT READY · 报告已生成</p>
+          <h2 class="modal-title" id="modal-title">免费解锁完整选校报告</h2>
+        </div>
+      </div>
+      <p class="modal-desc" id="modal-desc">补充联系方式后即可查看 6 所院校的完整推荐理由，顾问也会结合你的背景提供一对一解读。</p>
+      <ul class="unlock-benefits" aria-label="解锁内容">
+        <li><span>01</span>查看冲刺、匹配、保底院校完整理由</li>
+        <li><span>02</span>获得申请定位与下一步规划建议</li>
+      </ul>
       <form id="lead-form" novalidate>
-        <div class="field"><label for="wechat">微信号</label><input type="text" id="wechat" name="wechat" placeholder="请输入微信号" required /></div>
-        <div class="field"><label for="phone">手机号</label><input type="tel" id="phone" name="phone" placeholder="请输入 11 位手机号" required /></div>
-        <p class="privacy-note modal-privacy">联系方式仅用于本次留学咨询与回访，我们会妥善保护你的个人信息。</p>
-        <div class="modal-actions"><button type="button" class="btn-ghost" id="modal-cancel">暂不</button><button type="submit" class="btn-primary" id="lead-submit">确认解锁</button></div>
+        <div class="lead-fields">
+          <div class="field"><label for="wechat">微信号 <b>*</b></label><input type="text" id="wechat" name="wechat" placeholder="方便顾问发送报告" autocomplete="off" maxlength="64" required /></div>
+          <div class="field"><label for="phone">手机号 <b>*</b></label><input type="tel" id="phone" name="phone" placeholder="请输入 11 位中国大陆手机号" autocomplete="tel" inputmode="numeric" maxlength="11" required /></div>
+        </div>
+        <div class="form-error lead-form-error" id="lead-form-error" role="alert" hidden></div>
+        <div class="privacy-assurance"><span aria-hidden="true">🔒</span><p><strong>信息安全承诺</strong><small>仅用于发送报告及本次留学咨询，不会公开或用于无关营销。</small></p></div>
+        <button type="submit" class="btn-primary lead-unlock-btn" id="lead-submit">立即解锁完整报告 <span aria-hidden="true">→</span></button>
+        <button type="button" class="text-cancel" id="modal-cancel">暂不解锁，返回查看院校名单</button>
       </form>
     </div>
   </div>
-  <script src="/app.js"></script>
+  <script src="/app.js?v=4"></script>
 </body>
 </html>

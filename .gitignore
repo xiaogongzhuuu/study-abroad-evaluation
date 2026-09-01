@@ -22,3 +22,6 @@ data/*.json
 
 # 日志
 *.log
+
+# 私有备份
+backups/

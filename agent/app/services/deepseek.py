@@ -52,11 +52,11 @@ def chat(
         try:
             response = client.chat.completions.create(**kwargs)
             return response.choices[0].message.content or ""
-        except AuthenticationError:
-            raise  # key 配置错误，重试无意义，交给上层日志暴露
+        except AuthenticationError as exc:
+            raise AIError("AI 服务认证失败，请联系管理员") from exc
         except Exception as exc:
             last_exc = exc
             if attempt == _MAX_RETRIES:
                 break
             time.sleep(attempt + 1)
-    raise AIError(f"AI 服务暂时不可用，请稍后重试（{last_exc}）")
+    raise AIError("AI 服务暂时不可用，请稍后重试") from last_exc

@@ -48,6 +48,7 @@ def init_db() -> None:
 
 # 后续新增的选填列：建表语句不动，用 ALTER TABLE 补齐（兼容旧库）
 _EXTRA_COLUMNS = {
+    "gpa_scale": "INTEGER",
     "school_tier": "TEXT",
     "degree": "TEXT",
     "language_type": "TEXT",
@@ -76,6 +77,7 @@ def insert_lead(
     language_type: str | None = None,
     language_score: float | None = None,
     report_id: str | None = None,
+    gpa_scale: int | None = None,
 ) -> dict:
     """插入一条留资记录，返回完整记录（含 id 与 created_at）。"""
     created_at = datetime.now(timezone.utc).isoformat()
@@ -87,14 +89,14 @@ def insert_lead(
                 INSERT INTO leads (
                     wechat, phone, gpa, major, target_country,
                     school_tier, degree, language_type, language_score,
-                    report_id, created_at
+                    report_id, created_at, gpa_scale
                 )
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 """,
                 (
                     wechat, phone, gpa, major, target_country,
                     school_tier, degree, language_type, language_score,
-                    report_id, created_at,
+                    report_id, created_at, gpa_scale,
                 ),
             )
             report = get_report(report_id, conn=conn) if report_id else None
@@ -103,6 +105,7 @@ def insert_lead(
                 "wechat": wechat,
                 "phone": phone,
                 "gpa": gpa,
+                "gpa_scale": gpa_scale,
                 "major": major,
                 "target_country": target_country,
                 "school_tier": school_tier,

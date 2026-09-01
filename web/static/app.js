@@ -11,12 +11,46 @@ const unlockBtn = document.getElementById('unlock-btn');
 
 const modalOverlay = document.getElementById('modal-overlay');
 const modalCancel = document.getElementById('modal-cancel');
+const modalClose = document.getElementById('modal-close');
 const leadForm = document.getElementById('lead-form');
 const leadSubmitBtn = document.getElementById('lead-submit');
 const fillExampleBtn = document.getElementById('fill-example-btn');
 
 let currentContext = null; // 最近一次测评背景 { gpa, major, target_country }
 let currentReportId = null; // 服务端保存的报告 ID，留资时只提交该 ID
+let modalTrigger = null;
+let loadingTimer = null;
+const LANGUAGE_RULES = {
+  雅思: { min: 0, max: 9, step: 0.5, example: '例：7.0' },
+  托福: { min: 0, max: 120, step: 1, example: '例：100' },
+  '托福（1–6分制）': { min: 1, max: 6, step: 0.5, example: '例：5.0' },
+};
+
+function syncInputHints() {
+  const scale = Number(document.getElementById('gpa-scale').value);
+  const gpaInput = document.getElementById('gpa');
+  gpaInput.max = String(scale);
+  gpaInput.placeholder = scale === 100 ? '例：85' : scale === 5 ? '例：4.2' : '例：3.6';
+  document.getElementById('gpa-hint').textContent = `按成绩单原始分数填写，满分 ${scale}`;
+  const other = document.getElementById('country').value === '其他';
+  document.getElementById('country-other-field').hidden = !other;
+  document.getElementById('country-other').disabled = !other;
+  document.getElementById('country-other').required = other;
+  const rule = LANGUAGE_RULES[document.getElementById('lang-type').value];
+  const scoreInput = document.getElementById('lang-score');
+  scoreInput.min = String(rule?.min ?? 0);
+  scoreInput.max = String(rule?.max ?? 120);
+  scoreInput.step = String(rule?.step ?? 0.5);
+  scoreInput.placeholder = rule?.example || '先选择语言类型';
+  document.getElementById('language-hint').textContent = rule
+    ? `总分 ${rule.min}～${rule.max}，以 ${rule.step} 分递增；未考可留空`
+    : '语言类型与总分需一起填写；未考可留空';
+}
+
+['gpa-scale', 'country', 'lang-type'].forEach((id) => {
+  document.getElementById(id).addEventListener('change', syncInputHints);
+});
+syncInputHints();
 
 // 档位 → CSS 类名映射
 const LEVEL_CLASS = {
@@ -30,6 +64,7 @@ const PHONE_RE = /^1[3-9]\d{9}$/;
 
 // 一键填入演示背景，仅填表、不自动提交，方便用户了解格式与修改内容
 fillExampleBtn.addEventListener('click', () => {
+  document.getElementById('gpa-scale').value = '4';
   document.getElementById('gpa').value = '3.7';
   document.getElementById('major').value = '计算机科学';
   document.getElementById('country').value = '美国';
@@ -37,6 +72,8 @@ fillExampleBtn.addEventListener('click', () => {
   document.getElementById('degree').value = '硕士';
   document.getElementById('lang-type').value = '雅思';
   document.getElementById('lang-score').value = '7';
+  document.getElementById('country-other').value = '';
+  syncInputHints();
   clearFieldErrors(form);
   hideFormError(form);
 });
@@ -101,25 +138,29 @@ form.addEventListener('submit', async (e) => {
   clearFieldErrors(form);
   hideFormError(form);
 
-  const gpa = parseFloat(gpaInput.value);
+  const gpa = gpaInput.valueAsNumber;
+  const gpaScale = Number(document.getElementById('gpa-scale').value);
   const major = majorInput.value.trim();
-  const country = countryInput.value;
+  const country = countryInput.value === '其他'
+    ? document.getElementById('country-other').value.trim()
+    : countryInput.value;
   const schoolTier = tierInput.value;
   const degree = degreeInput.value;
   const langType = langTypeInput.value;
   const langScoreRaw = langScoreInput.value.trim();
-  const langScore = langScoreRaw === '' ? NaN : parseFloat(langScoreRaw);
+  const langScore = langScoreRaw === '' ? NaN : langScoreInput.valueAsNumber;
 
-  if (Number.isNaN(gpa) || gpa <= 0 || gpa > 5) {
-    setFieldError(gpaInput, 'GPA 需为 0~5 之间的数字');
+  if (!Number.isFinite(gpa) || gpa < 0.01 || gpa > gpaScale) {
+    setFieldError(gpaInput, `GPA / 均分需大于 0 且不超过所选满分 ${gpaScale}`);
     return;
   }
-  if (!major) {
-    setFieldError(majorInput, '请填写申请专业');
+  if (!major || major.length > 50) {
+    setFieldError(majorInput, '请填写申请专业（最多 50 字）');
     return;
   }
-  if (!country) {
-    setFieldError(countryInput, '请选择目标国家');
+  if (!country || country === '其他' || country.length > 30) {
+    setFieldError(countryInput.value === '其他' ? document.getElementById('country-other') : countryInput,
+      '请填写具体的目标国家或地区（最多 30 字）');
     return;
   }
   // 语言类型与成绩需成对填写
@@ -128,16 +169,16 @@ form.addEventListener('submit', async (e) => {
     return;
   }
   if (!Number.isNaN(langScore)) {
-    const max = langType === '雅思' ? 9 : 120;
-    if (langScore <= 0 || langScore > max) {
-      setFieldError(langScoreInput, `${langType}成绩需为 0~${max} 之间`);
+    const rule = LANGUAGE_RULES[langType];
+    if (!rule || !Number.isFinite(langScore) || langScore < rule.min || langScore > rule.max || langScore % rule.step !== 0) {
+      setFieldError(langScoreInput, `${langType}成绩需为 ${rule?.min}～${rule?.max}，以 ${rule?.step} 分递增`);
       return;
     }
   }
 
   setLoading(true);
   try {
-    const payload = { gpa, major, target_country: country };
+    const payload = { gpa, gpa_scale: gpaScale, major, target_country: country };
     if (schoolTier) payload.school_tier = schoolTier;
     if (degree) payload.degree = degree;
     if (langType && !Number.isNaN(langScore)) {
@@ -153,6 +194,7 @@ form.addEventListener('submit', async (e) => {
     const data = await res.json();
     currentContext = {
       gpa,
+      gpa_scale: gpaScale,
       major,
       target_country: country,
       school_tier: schoolTier || null,
@@ -162,6 +204,9 @@ form.addEventListener('submit', async (e) => {
     };
     currentReportId = data.report_id;
     renderTiers(data.tiers);
+    unlockBtn.hidden = false;
+    document.getElementById('result-tip').hidden = false;
+    document.getElementById('thank-you').hidden = true;
     resultArea.hidden = false;
     resultArea.scrollIntoView({ behavior: 'smooth' });
   } catch (err) {
@@ -177,7 +222,16 @@ form.addEventListener('submit', async (e) => {
 });
 
 function setLoading(loading) {
+  clearTimeout(loadingTimer);
+  fillExampleBtn.disabled = loading;
+  const status = document.getElementById('evaluate-status');
+  status.hidden = !loading;
+  status.textContent = loading ? '正在生成初步建议，请稍候，无需重复提交。' : '';
+  if (loading) loadingTimer = setTimeout(() => {
+    status.textContent = 'AI 仍在生成建议，可能需要更长时间；请保留此页面。';
+  }, 20000);
   submitBtn.disabled = loading;
+  unlockBtn.disabled = loading;
   submitBtn.innerHTML = loading
     ? '<span class="spinner"></span>正在分析申请背景...'
     : '生成我的选校建议 <span aria-hidden="true">→</span>';
@@ -206,7 +260,7 @@ function renderTiers(tiers) {
 
       const reason = document.createElement('div');
       reason.className = 'school-reason blurred';
-      reason.textContent = school.reason;
+      reason.textContent = school.reason || '留资后查看完整推荐理由';
 
       item.appendChild(name);
       item.appendChild(reason);
@@ -221,20 +275,48 @@ function renderTiers(tiers) {
 
 // 留资弹窗：解锁入口
 function openModal() {
+  modalTrigger = document.activeElement;
   modalOverlay.hidden = false;
+  document.body.classList.add('modal-open');
+  modalOverlay.setAttribute('aria-hidden', 'false');
+  window.setTimeout(() => document.getElementById('wechat').focus(), 0);
 }
 
 function closeModal() {
   modalOverlay.hidden = true;
+  document.body.classList.remove('modal-open');
+  modalOverlay.setAttribute('aria-hidden', 'true');
+  if (modalTrigger instanceof HTMLElement) modalTrigger.focus();
 }
 
 unlockBtn.addEventListener('click', openModal);
 modalCancel.addEventListener('click', closeModal);
+modalClose.addEventListener('click', closeModal);
 modalOverlay.addEventListener('click', (e) => {
   if (e.target === modalOverlay) closeModal();
 });
 document.addEventListener('keydown', (e) => {
   if (e.key === 'Escape' && !modalOverlay.hidden) closeModal();
+  if (e.key === 'Tab' && !modalOverlay.hidden) {
+    const focusable = [...modalOverlay.querySelectorAll('button:not([disabled]), input:not([disabled])')];
+    if (!focusable.length) return;
+    const first = focusable[0];
+    const last = focusable[focusable.length - 1];
+    if (e.shiftKey && document.activeElement === first) {
+      e.preventDefault();
+      last.focus();
+    } else if (!e.shiftKey && document.activeElement === last) {
+      e.preventDefault();
+      first.focus();
+    }
+  }
+});
+
+leadForm.addEventListener('input', (e) => {
+  if (!(e.target instanceof HTMLInputElement)) return;
+  e.target.classList.remove('invalid');
+  e.target.closest('.field')?.querySelector('.field-error')?.remove();
+  hideFormError(leadForm);
 });
 
 // 留资提交（D5 实现）
@@ -252,10 +334,12 @@ leadForm.addEventListener('submit', async (e) => {
 
   if (wechat.length < 2) {
     setFieldError(wechatInput, '请填写微信号');
+    wechatInput.focus();
     return;
   }
   if (!PHONE_RE.test(phone)) {
     setFieldError(phoneInput, '请填写正确的 11 位手机号');
+    phoneInput.focus();
     return;
   }
 
@@ -269,6 +353,7 @@ leadForm.addEventListener('submit', async (e) => {
         wechat,
         phone,
         gpa: currentContext?.gpa ?? null,
+        gpa_scale: currentContext?.gpa_scale ?? null,
         major: currentContext?.major ?? null,
         target_country: currentContext?.target_country ?? null,
         school_tier: currentContext?.school_tier ?? null,
@@ -279,8 +364,12 @@ leadForm.addEventListener('submit', async (e) => {
       }),
     });
     if (!res.ok) throw new Error(await serverMessage(res));
+    const data = await res.json();
+    if (!data.report?.tiers) throw new Error('报告加载失败，请联系顾问');
+    renderTiers(data.report.tiers);
     unlockReport();
     closeModal();
+    leadForm.reset();
   } catch (err) {
     const msg =
       err instanceof TypeError
@@ -290,7 +379,7 @@ leadForm.addEventListener('submit', async (e) => {
     console.error(err);
   } finally {
     leadSubmitBtn.disabled = false;
-    leadSubmitBtn.innerHTML = '解锁完整报告';
+    leadSubmitBtn.innerHTML = '立即解锁完整报告 <span aria-hidden="true">→</span>';
   }
 });
 

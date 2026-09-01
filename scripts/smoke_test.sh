@@ -116,12 +116,12 @@ else
   FAIL=$((FAIL + 1))
 fi
 
-# 语言类型/成绩未成对时留资不受影响（字段独立可选）
+# 语言类型/成绩需成对填写
 resp=$(request -X POST "${BASE_URL}/api/v1/leads" \
   -H 'Content-Type: application/json' \
   -d '{"wechat":"smoke_partial","phone":"13900139000","language_score":6.5}')
 body=${resp%$'\n'*}; status=${resp##*$'\n'}
-check_status "仅填语言成绩留资 → 200" "${status#__STATUS__:}" 200
+check_status "仅填语言成绩留资 → 422" "${status#__STATUS__:}" 422
 
 echo "== 5. 数据查看接口 =="
 resp=$(request -H "X-Admin-Token: ${TOKEN:-}" "${BASE_URL}/api/v1/leads")

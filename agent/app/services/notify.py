@@ -29,7 +29,8 @@ def _fmt_time(iso: str) -> str:
 def _lead_summary(lead: dict) -> str:
     lines = [f"微信：{lead['wechat']}", f"手机：{lead['phone']}"]
     if lead.get("gpa") is not None:
-        lines.append(f"GPA：{lead['gpa']}")
+        scale = lead.get("gpa_scale")
+        lines.append(f"GPA / 均分：{lead['gpa']}" + (f" / {scale}" if scale else "（满分未记录）"))
     if lead.get("major"):
         lines.append(f"专业：{lead['major']}")
     if lead.get("target_country"):

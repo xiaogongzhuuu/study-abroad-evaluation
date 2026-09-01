@@ -8,6 +8,9 @@ const emptyTip = document.getElementById('empty-tip');
 const adminError = document.getElementById('admin-error');
 const statTotal = document.getElementById('stat-total');
 const statToday = document.getElementById('stat-today');
+const statReports = document.getElementById('stat-reports');
+const resultCount = document.getElementById('result-count');
+const searchInput = document.getElementById('lead-search');
 const refreshBtn = document.getElementById('refresh-btn');
 const exportBtn = document.getElementById('export-btn');
 
@@ -24,9 +27,16 @@ const reportBody = document.getElementById('report-body');
 const TOKEN_KEY = 'adminToken';
 
 let leads = [];
+let query = '';
+let reportTrigger = null;
 
 function token() {
   return sessionStorage.getItem(TOKEN_KEY) || '';
+}
+
+function fmtGpa(lead) {
+  if (lead.gpa == null) return '—';
+  return lead.gpa_scale ? `${lead.gpa} / ${lead.gpa_scale}` : `${lead.gpa}（满分未记录）`;
 }
 
 // 留资时间存的是 UTC ISO，展示转北京时间
@@ -52,6 +62,8 @@ function showError(msg) {
 
 async function loadData() {
   adminError.hidden = true;
+  refreshBtn.disabled = true;
+  refreshBtn.classList.add('is-loading');
   try {
     const res = await fetch('/api/v1/leads', {
       headers: { 'X-Admin-Token': token() },
@@ -61,7 +73,8 @@ async function loadData() {
       return;
     }
     if (!res.ok) {
-      showError(`数据加载失败（${res.status}）`);
+      const error = await res.json().catch(() => ({}));
+      showError(error.detail || `数据加载失败（${res.status}）`);
       return;
     }
     const data = await res.json();
@@ -72,44 +85,60 @@ async function loadData() {
       showError('网络异常，请检查连接后重试');
     }
     console.error(err);
+  } finally {
+    refreshBtn.disabled = false;
+    refreshBtn.classList.remove('is-loading');
   }
 }
 
 function render() {
   statTotal.textContent = leads.length;
   statToday.textContent = leads.filter((l) => isTodayCN(l.created_at)).length;
+  statReports.textContent = leads.filter((l) => l.result_json).length;
+
+  const normalized = query.toLocaleLowerCase('zh-CN');
+  const visibleLeads = leads.filter((lead) =>
+    [lead.wechat, lead.phone, lead.major, lead.target_country, lead.school_tier, lead.degree]
+      .some((value) => String(value ?? '').toLocaleLowerCase('zh-CN').includes(normalized))
+  );
+  resultCount.textContent = query
+    ? `找到 ${visibleLeads.length} 条匹配结果`
+    : `共 ${leads.length} 条记录`;
 
   leadsBody.innerHTML = '';
-  for (const lead of leads) {
+  for (const lead of visibleLeads) {
     const tr = document.createElement('tr');
     const language =
       lead.language_score != null
         ? `${lead.language_type || ''} ${lead.language_score}`.trim()
         : '';
-    [
-      lead.id,
-      fmtTime(lead.created_at),
-      lead.wechat,
-      lead.phone,
-      lead.gpa ?? '',
-      lead.major ?? '',
-      lead.target_country ?? '',
-      lead.school_tier ?? '',
-      lead.degree ?? '',
-      language,
-    ].forEach((value) => {
+    const cells = [
+      ['编号', `#${lead.id}`],
+      ['留资时间', fmtTime(lead.created_at)],
+      ['微信', lead.wechat],
+      ['手机', lead.phone],
+      ['GPA / 均分', fmtGpa(lead)],
+      ['专业', lead.major ?? '—'],
+      ['目标国家', lead.target_country ?? '—'],
+      ['院校档次', lead.school_tier ?? '—'],
+      ['学位', lead.degree ?? '—'],
+      ['语言成绩', language || '—'],
+    ];
+    cells.forEach(([label, value]) => {
       const td = document.createElement('td');
       td.textContent = value;
+      td.dataset.label = label;
       tr.appendChild(td);
     });
 
     // 报告列：有结果入库的线索可点开查看选校推荐（P1）
     const reportTd = document.createElement('td');
+    reportTd.dataset.label = '测评报告';
     if (lead.result_json) {
       const btn = document.createElement('button');
       btn.type = 'button';
       btn.className = 'btn-ghost view-report-btn';
-      btn.textContent = '查看';
+      btn.innerHTML = '查看报告 <span aria-hidden="true">→</span>';
       btn.addEventListener('click', () => openReportModal(lead));
       reportTd.appendChild(btn);
     } else {
@@ -119,16 +148,23 @@ function render() {
 
     leadsBody.appendChild(tr);
   }
-  emptyTip.hidden = leads.length > 0;
+  emptyTip.hidden = visibleLeads.length > 0;
+  document.querySelector('.table-wrap').hidden = visibleLeads.length === 0;
 }
+
+searchInput.addEventListener('input', () => {
+  query = searchInput.value.trim();
+  render();
+});
 
 // 测评报告弹窗（P1）
 const LEVEL_CLASS = { 冲刺: 'reach', 匹配: 'match', 保底: 'safety' };
 
 function openReportModal(lead) {
+  reportTrigger = document.activeElement;
   reportMeta.textContent = [
     `微信 ${lead.wechat}`,
-    lead.gpa != null ? `GPA ${lead.gpa}` : '',
+    lead.gpa != null ? `GPA / 均分 ${fmtGpa(lead)}` : '',
     lead.major || '',
     lead.target_country || '',
   ]
@@ -144,7 +180,7 @@ function openReportModal(lead) {
   }
   if (!Array.isArray(tiers) || tiers.length === 0) {
     reportBody.textContent = '报告数据异常，无法解析';
-    reportOverlay.hidden = false;
+    showReportModal();
     return;
   }
 
@@ -179,17 +215,33 @@ function openReportModal(lead) {
     card.appendChild(body);
     reportBody.appendChild(card);
   }
-  reportOverlay.hidden = false;
+  showReportModal();
 }
 
-reportClose.addEventListener('click', () => {
+function showReportModal() {
+  reportOverlay.hidden = false;
+  reportOverlay.setAttribute('aria-hidden', 'false');
+  document.body.classList.add('modal-open');
+  reportClose.focus();
+}
+
+function closeReportModal() {
   reportOverlay.hidden = true;
-});
+  reportOverlay.setAttribute('aria-hidden', 'true');
+  document.body.classList.remove('modal-open');
+  if (reportTrigger instanceof HTMLElement) reportTrigger.focus();
+}
+
+reportClose.addEventListener('click', closeReportModal);
 reportOverlay.addEventListener('click', (e) => {
-  if (e.target === reportOverlay) reportOverlay.hidden = true;
+  if (e.target === reportOverlay) closeReportModal();
 });
 document.addEventListener('keydown', (e) => {
-  if (e.key === 'Escape' && !reportOverlay.hidden) reportOverlay.hidden = true;
+  if (e.key === 'Escape' && !reportOverlay.hidden) closeReportModal();
+  if (e.key === 'Tab' && !reportOverlay.hidden) {
+    e.preventDefault();
+    reportClose.focus();
+  }
 });
 
 // 口令弹窗
@@ -197,6 +249,8 @@ function openTokenModal() {
   tokenError.hidden = true;
   tokenInput.value = '';
   tokenOverlay.hidden = false;
+  tokenOverlay.setAttribute('aria-hidden', 'false');
+  document.body.classList.add('modal-open');
   tokenInput.focus();
 }
 
@@ -219,12 +273,15 @@ tokenForm.addEventListener('submit', async (e) => {
     }
     sessionStorage.setItem(TOKEN_KEY, value);
     tokenOverlay.hidden = true;
+    tokenOverlay.setAttribute('aria-hidden', 'true');
+    document.body.classList.remove('modal-open');
     if (res.ok) {
       const data = await res.json();
       leads = data.leads || [];
       render();
     } else {
-      showError(`数据加载失败（${res.status}）`);
+      const error = await res.json().catch(() => ({}));
+      showError(error.detail || `数据加载失败（${res.status}）`);
     }
   } catch (err) {
     if (err instanceof TypeError) {
@@ -239,7 +296,7 @@ tokenForm.addEventListener('submit', async (e) => {
 function exportCsv() {
   if (!leads.length) return;
   const headers = [
-    'ID', '留资时间', '微信', '手机', 'GPA', '专业',
+    'ID', '留资时间', '微信', '手机', 'GPA / 均分', '专业',
     '目标国家', '院校档次', '学位', '语言成绩',
   ];
   const rows = leads.map((lead) => [
@@ -247,7 +304,7 @@ function exportCsv() {
     fmtTime(lead.created_at),
     lead.wechat,
     lead.phone,
-    lead.gpa ?? '',
+    lead.gpa != null ? fmtGpa(lead) : '',
     lead.major ?? '',
     lead.target_country ?? '',
     lead.school_tier ?? '',

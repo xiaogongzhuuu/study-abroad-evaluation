@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="robots" content="noindex,nofollow"><title>官网按钮接入预览 · 途策留学</title>
+  <style>
+    *{box-sizing:border-box}body{margin:0;background:#f5f3ec;color:#172e28;font-family:system-ui,-apple-system,"PingFang SC",sans-serif}
+    header{padding:24px 7vw;border-bottom:1px solid #d9ddd5;display:flex;justify-content:space-between;gap:20px;align-items:center}
+    header strong{letter-spacing:2px;font-size:14px}header span{font-size:12px;color:#66736b}
+    main{max-width:1000px;padding:90px 7vw 180px;margin:auto}.label{color:#84704c;letter-spacing:2px;font-size:12px}
+    h1{font-size:clamp(32px,6vw,58px);line-height:1.25;font-weight:600;margin:22px 0}
+    p{max-width:620px;line-height:1.9;color:#647169}a{color:#172e28}section{border-top:1px solid #d7dcd3;margin-top:46px;padding-top:24px}
+    li{line-height:1.9;margin-bottom:10px}code{font-size:13px}footer{position:fixed;bottom:0;left:0;width:100%;padding:17px 7vw;background:#e9ede5;color:#536457;font-size:12px}
+  </style>
+</head>
+<body>
+  <header><strong>TUCE EDUCATION</strong><span>本地接入预览 · 非正式官网</span></header>
+  <main>
+    <div class="label">AI SCHOOL MATCH · 官网入口</div>
+    <h1>一个小入口，<br>让选校建议触手可及。</h1>
+    <p>右下角是准备接入 tuce.asia 的悬浮按钮。点击即可进入当前本地测评系统；此页面只用于演示按钮，不会修改线上官网。</p>
+    <section><h2>访客会怎样使用？</h2><ol><li>在官网点击「AI 智能选校」。</li><li>填写 GPA、专业与申请地区，获取三档院校名单。</li><li>留下联系方式后，查看完整推荐理由。</li></ol></section>
+    <p>接入时将按钮目标替换为正式 HTTPS 地址。页面底部预留了空间，方便与官网已有咨询入口共存；实际位置待拿到官网源码后确认。</p>
+    <a href="/">直接打开测评页 →</a>
+  </main>
+  <footer>本地预览 · 不会自动发起 AI 调用或收集联系方式</footer>
+  <script src="/tuce-widget.js" data-url="/" defer></script>
+</body>
+</html>

@@ -3,31 +3,52 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>留资数据 - 智能选校测评</title>
+  <title>线索管理后台｜途策留学</title>
   <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-  <link rel="stylesheet" href="/style.css" />
+  <link rel="stylesheet" href="/style.css?v=4" />
 </head>
-<body>
+<body class="admin-page">
   <header class="site-header">
-    <div class="container">
-      <div class="logo">
-        <img class="logo-icon" src="/logo.svg" alt="" />
-        <h1 class="logo-text">留资数据</h1>
-      </div>
-      <p class="subtitle">智能选校测评 · 线索查看</p>
+    <div class="wide-container nav-row">
+      <a class="brand" href="/" aria-label="返回智能选校测评">
+        <span class="brand-mark">T</span>
+        <span><strong>TUCE EDUCATION</strong><small>途策留学</small></span>
+      </a>
+      <a class="back-link" href="/">返回测评首页 <span aria-hidden="true">↗</span></a>
     </div>
   </header>
 
-  <main class="container">
-    <section class="form-card admin-card">
+  <main class="admin-main wide-container">
+    <div class="admin-heading">
+      <div>
+        <p class="eyebrow">LEAD MANAGEMENT · 数据工作台</p>
+        <h1>留资线索管理</h1>
+        <p>查看测评用户背景与联系方式，及时跟进高意向申请需求。</p>
+      </div>
+      <span class="admin-live"><i aria-hidden="true"></i> 数据实时同步</span>
+    </div>
+
+    <section class="admin-overview" aria-label="线索概览">
+      <div class="overview-card primary"><span class="overview-icon" aria-hidden="true">∑</span><p>累计线索<strong id="stat-total">-</strong><small>全部留资记录</small></p></div>
+      <div class="overview-card"><span class="overview-icon" aria-hidden="true">＋</span><p>今日新增<strong id="stat-today">-</strong><small>北京时间今日</small></p></div>
+      <div class="overview-card"><span class="overview-icon" aria-hidden="true">▤</span><p>已生成报告<strong id="stat-reports">-</strong><small>可查看完整选校建议</small></p></div>
+    </section>
+
+    <section class="admin-card">
       <div class="admin-toolbar">
-        <div class="admin-stats">
-          <span class="stat">总线索 <b id="stat-total">-</b></span>
-          <span class="stat">今日新增 <b id="stat-today">-</b></span>
+        <div class="admin-table-title">
+          <h2>全部线索</h2>
+          <span id="result-count">正在加载数据…</span>
         </div>
-        <div class="admin-actions">
-          <button type="button" class="btn-ghost" id="refresh-btn">刷新</button>
-          <button type="button" class="btn-ghost" id="export-btn">导出 CSV</button>
+        <div class="admin-toolbar-right">
+          <label class="admin-search" for="lead-search">
+            <span aria-hidden="true">⌕</span>
+            <input type="search" id="lead-search" placeholder="搜索微信、手机、专业或国家" autocomplete="off" />
+          </label>
+          <div class="admin-actions">
+            <button type="button" class="btn-ghost admin-icon-btn" id="refresh-btn"><span aria-hidden="true">↻</span> 刷新</button>
+            <button type="button" class="btn-primary admin-export-btn" id="export-btn"><span aria-hidden="true">⇩</span> 导出 CSV</button>
+          </div>
         </div>
       </div>
 
@@ -37,11 +58,11 @@
         <table class="leads-table">
           <thead>
             <tr>
-              <th>ID</th>
+              <th>编号</th>
               <th>留资时间</th>
               <th>微信</th>
               <th>手机</th>
-              <th>GPA</th>
+              <th>GPA / 均分</th>
               <th>专业</th>
               <th>目标国家</th>
               <th>院校档次</th>
@@ -53,12 +74,12 @@
           <tbody id="leads-body"></tbody>
         </table>
       </div>
-      <p class="empty-tip" id="empty-tip" hidden>暂无留资数据</p>
+      <div class="empty-tip" id="empty-tip" hidden><span aria-hidden="true">⌕</span><strong>没有找到相关线索</strong><small>可以尝试调整搜索关键词</small></div>
     </section>
   </main>
 
   <!-- 测评报告弹窗（P1：查看该留资对应的选校推荐报告） -->
-  <div class="modal-overlay" id="report-overlay" hidden>
+  <div class="modal-overlay" id="report-overlay" aria-hidden="true" hidden>
     <div class="modal report-modal" role="dialog" aria-modal="true" aria-labelledby="report-title">
       <div class="report-head">
         <h2 class="modal-title" id="report-title">测评报告</h2>
@@ -70,7 +91,7 @@
   </div>
 
   <!-- 访问口令弹窗 -->
-  <div class="modal-overlay" id="token-overlay" hidden>
+  <div class="modal-overlay" id="token-overlay" aria-hidden="true" hidden>
     <div class="modal" role="dialog" aria-modal="true" aria-labelledby="token-title">
       <h2 class="modal-title" id="token-title">需要访问口令</h2>
       <p class="modal-desc">该页面包含用户联系方式，请输入访问口令</p>
@@ -89,6 +110,6 @@
     </div>
   </div>
 
-  <script src="/admin.js"></script>
+  <script src="/admin.js?v=6"></script>
 </body>
 </html>
