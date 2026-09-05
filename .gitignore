@@ -25,3 +25,6 @@ data/*.json
 
 # 私有备份
 backups/
+
+# 本机 AI 工具权限配置
+.claude/

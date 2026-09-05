@@ -1,0 +1,11 @@
+{$EVALUATION_DOMAIN} {
+    encode gzip
+    request_body {
+        max_size 16KB
+    }
+    header X-Frame-Options "DENY"
+    header Content-Security-Policy "frame-ancestors 'none'"
+    @internal path /docs /redoc /openapi.json /api/v1/ping-deepseek /integration-preview.html
+    respond @internal 404
+    reverse_proxy app:8000
+}

@@ -1,68 +1,145 @@
-# 途策留学 · AI 智能选校测评
+# 途策留学 AI 智能选校与线索转化系统
 
 [![Python](https://img.shields.io/badge/Python-3.10%2B-3776AB?logo=python&logoColor=white)](https://www.python.org/)
 [![FastAPI](https://img.shields.io/badge/FastAPI-0.115%2B-009688?logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com/)
-[![DeepSeek](https://img.shields.io/badge/LLM-DeepSeek-4D6BFE)](https://www.deepseek.com/)
+[![Tests](https://img.shields.io/badge/pytest-39%20passed-2EAD33?logo=pytest&logoColor=white)](docs/test-results-2026-09-01.md)
+[![Deployment](https://img.shields.io/badge/Deployment-Docker%20%2B%20Caddy-2496ED?logo=docker&logoColor=white)](deploy/compose.yaml)
 
-一个可独立部署的留学选校与线索转化应用。学生填写 GPA、专业和目标国家/地区后，系统通过 DeepSeek 生成冲刺、匹配、保底三档院校建议；用户解锁完整报告后，线索会写入本地数据库，并可通过企业微信和邮件通知顾问。
+面向留学咨询业务的可部署 AI 应用原型：学生用约 30 秒填写申请背景，系统生成冲刺、匹配、保底三档院校建议；用户留资后解锁完整报告，线索同步进入顾问后台，并通过企业微信或邮件通知顾问跟进。
 
-> 本项目是途策留学的业务原型。AI 生成结果仅供申请规划参考，不构成录取承诺。
+项目重点不是单次调用大模型，而是把 AI 能力接入真实业务流程，完成从用户输入、模型生成、结果校验、报告解锁、线索沉淀到顾问跟进的完整闭环。
 
-## 功能亮点
+> 当前状态：已完成本地业务原型、自动化测试、Docker/Caddy 部署模板和官网嵌入方案；尚未发布到正式域名。AI 推荐仅用于初步申请规划，不构成录取承诺。
 
-- **30 秒完成测评**：核心信息精简，支持院校背景、学位与语言成绩等选填项
-- **三档选校建议**：生成冲刺、匹配、保底共 6 所院校及推荐理由
-- **报告解锁闭环**：服务端保存报告并关联联系方式，避免前端伪造报告编号
-- **顾问及时跟进**：支持企业微信群机器人和 SMTP 邮件异步通知
-- **线索管理后台**：口令保护、数据统计、刷新与 CSV 导出
-- **无需前端构建**：FastAPI 同时提供 API 和静态页面，适合快速部署
+## 业务问题
 
-## 核心流程
+传统免费咨询通常依赖顾问人工收集背景、给出初步选校方向，再整理联系方式进入后续跟进。这个流程存在三个问题：
 
-1. 学生填写 GPA + 申请专业 + 目标国家
-2. AI 返回三档（冲刺 / 匹配 / 保底）共 6 所学校 + 推荐理由
-3. 完整理由被模糊遮罩，需留微信 / 手机号解锁
-4. 留资写入 SQLite 并展示完整报告 + 感谢页
-5. 后台异步推送企微群消息 + 邮件给顾问
+- 用户首次咨询信息不完整，顾问需要反复补问。
+- 初步建议依赖顾问即时响应，获客高峰期容易产生等待。
+- 测评结果、联系方式和后续跟进割裂，线索难以统一沉淀。
+
+本项目将流程重构为：
 
 ```mermaid
 flowchart LR
-    A[填写申请背景] --> B[FastAPI 参数校验]
-    B --> C[DeepSeek 生成三档建议]
-    C --> D[保存报告并返回 report_id]
-    D --> E[用户留资解锁完整报告]
-    E --> F[(SQLite 线索库)]
-    E --> G[企微 / 邮件通知顾问]
-    F --> H[口令保护的管理后台]
+    A[学生填写申请背景] --> B[服务端校验与限流]
+    B --> C[DeepSeek 生成结构化推荐]
+    C --> D[校验并保存完整报告]
+    D --> E[前端仅展示院校名单]
+    E --> F[用户留资解锁理由]
+    F --> G[(SQLite 线索库)]
+    F --> H[企微 / 邮件通知顾问]
+    G --> I[口令保护的顾问后台]
 ```
 
-## 技术栈
+## 我负责的工作
 
-- 后端：Python + FastAPI（含静态文件托管）
-- AI：DeepSeek API（openai SDK 兼容调用，带超时与自动重试）
-- 通知：企业微信群机器人 webhook + SMTP 邮件（任一失败不影响留资）
-- 数据存储：SQLite（单文件 `data/leads.db`）
-- 前端：原生 HTML / CSS / JS（无构建步骤）
+- 将留学测评从页面 Demo 落地为可独立部署的完整应用。
+- 设计学生背景 Schema、GPA 计分制和语言成绩校验规则。
+- 约束模型输出为三档、每档两所院校的结构化 JSON，并处理空值、重复院校、档位缺失和服务异常。
+- 设计服务端报告 ID 与留资关联，避免前端伪造或绕过解锁流程。
+- 实现 SQLite 迁移、顾问后台、CSV 导出、企微与邮件通知。
+- 增加管理端失败关闭、接口限流、安全响应头、自动备份和 HTTPS 部署模板。
+- 编写自动化测试、真实模型冒烟测试及官网嵌入说明。
 
-## 目录结构
+## 关键工程决策
 
+### 1. 完整报告只保存在服务端
+
+测评接口不会把推荐理由提前发送到浏览器，只返回院校名称和不可预测的 `report_id`。用户提交联系方式后，服务端校验报告 ID，再返回完整报告。
+
+这比前端 CSS 遮罩更可靠：浏览器网络面板中不存在可直接读取的隐藏理由，留资与报告也能形成服务端可追踪关联。
+
+### 2. 将模型输出视为不可信输入
+
+模型使用 JSON mode 返回结果，但服务端仍进行二次校验：
+
+- 必须包含冲刺、匹配、保底三个不同档位。
+- 每个档位必须恰好包含两所院校。
+- 院校名称和推荐理由不能为空。
+- 六所院校标准化后不得重复。
+- 无法解析、字段缺失或模型服务失败统一转换为可读的 `502` 响应。
+
+### 3. 明确推荐能力边界
+
+当前版本使用 DeepSeek 根据学生背景生成初步建议，不接入实时招生数据或外部院校知识库。因此提示词禁止模型声称已经核验最新排名、门槛、费用、截止日期或录取概率。
+
+这是一项有意的产品取舍：先验证低成本测评与线索转化闭环，再决定是否投入院校数据治理、检索和推荐评测体系。
+
+### 4. 通知失败不阻塞核心流程
+
+线索先写入数据库，再通过后台任务发送企微和邮件。任一通知渠道失败只记录日志，不回滚已保存的线索，避免第三方服务故障影响用户提交。
+
+### 5. 为单实例原型选择 SQLite
+
+SQLite 让应用无需额外数据库即可部署，并配有备份脚本和 Docker 持久化卷。它适合当前单机构、单进程原型；多实例部署时需要迁移到 PostgreSQL，并将进程内限流替换为 Redis 或网关级共享限流。
+
+## 系统架构
+
+```text
+Browser
+  ├─ 测评页：原生 HTML / CSS / JavaScript
+  └─ 顾问后台：口令登录、统计、刷新、CSV 导出
+          │
+          ▼
+FastAPI
+  ├─ Pydantic 输入与输出校验
+  ├─ 固定窗口接口限流
+  ├─ DeepSeek 调用、超时与重试
+  ├─ 报告 ID / 留资关联
+  ├─ SQLite 数据访问与兼容迁移
+  └─ 企业微信 / SMTP 后台通知
+          │
+          ▼
+Docker + Caddy
+  ├─ 非 root 应用容器
+  ├─ 健康检查
+  ├─ HTTPS 反向代理
+  └─ 数据持久化卷
 ```
-study-abroad-evaluation/
-├── agent/                  # 后端（FastAPI）
-│   ├── app/
-│   │   ├── main.py         # 入口：路由 + 统一异常处理（422/502/500 中文提示）
-│   │   ├── config.py       # 环境变量配置
-│   │   ├── schemas.py      # Pydantic 模型：输入校验
-│   │   ├── db.py           # SQLite 留资存储
-│   │   └── services/
-│   │       ├── deepseek.py # DeepSeek 调用（超时/重试）
-│   │       ├── selector.py # 选校引擎（JSON 解析、档位归一化）
-│   │       └── notify.py   # 企微 + 邮件通知
-│   ├── .env.example        # 配置模板（复制为 .env 填写）
-│   └── requirements.txt
-├── web/static/             # 前端页面（index.html / admin.html / app.js / admin.js / style.css）
-├── data/leads.db           # 留资数据库（自动创建，已被 gitignore）
-└── scripts/smoke_test.sh   # 全链路冒烟测试
+
+## 功能与交付范围
+
+| 能力 | 实现 |
+|---|---|
+| AI 测评 | 三档 6 校建议、结构化输出、重复与空值校验 |
+| 输入治理 | GPA 4/5/100 分制、雅思、托福两种分制、国家和字段长度校验 |
+| 报告转化 | 服务端保存报告、名单预览、留资后解锁完整理由 |
+| 线索管理 | SQLite 入库、后台查询、统计、CSV 导出 |
+| 顾问触达 | 企业微信群机器人、SMTP 邮件、通知失败隔离 |
+| 安全控制 | 管理口令失败关闭、恒定时间比较、基础限流、安全响应头、禁止缓存敏感响应 |
+| 部署运维 | Docker、非 root 用户、健康检查、Caddy HTTPS、持久化卷、备份脚本 |
+| 官网集成 | 独立页面、悬浮组件、iframe 预览与跨域边界说明 |
+
+## 测试与验证
+
+详细记录见 [`docs/test-results-2026-09-01.md`](docs/test-results-2026-09-01.md)。
+
+已完成：
+
+- 39 项 `pytest` 自动化测试，覆盖输入校验、模型结果结构、报告关联、管理鉴权、数据库迁移、通知内容和接口限流。
+- 一次真实 DeepSeek 端到端调用，观察耗时 3.51 秒；该结果仅代表单次本地测试，不作为性能承诺。
+- 前端脚本语法检查、错误恢复、移动端布局及后台登录检查。
+- 冒烟脚本覆盖健康检查、真实测评、留资入库、后台读取与页面访问。
+
+尚未完成：
+
+- 正式生产环境的负载测试和长期可用性监控。
+- 推荐质量黄金数据集、院校事实正确率和不同模型的离线对比。
+- 浏览器环境下带虚构联系方式的完整解锁及 CSV 有数据验收。
+
+运行自动化测试：
+
+```bash
+cd agent
+python -m pytest
+```
+
+服务启动后运行端到端冒烟测试：
+
+```bash
+bash scripts/smoke_test.sh
 ```
 
 ## 快速开始
@@ -73,130 +150,99 @@ study-abroad-evaluation/
 cd agent
 python3 -m venv .venv
 .venv/bin/pip install -r requirements.txt
-
-cp .env.example .env   # 填写 DEEPSEEK_API_KEY（通知配置可选，见下表）
-
+cp .env.example .env
+# 在 .env 中填写 DEEPSEEK_API_KEY 和强随机 ADMIN_TOKEN
 .venv/bin/python -m uvicorn app.main:app --port 8000
 ```
 
-启动后可访问：
+启动后访问：
 
 - 用户测评页：<http://localhost:8000>
-- 线索管理后台：<http://localhost:8000/admin>
-- Swagger API 文档：<http://localhost:8000/docs>
+- 顾问后台：<http://localhost:8000/admin>
+- API 文档：<http://localhost:8000/docs>
 
-## 配置项（agent/.env）
+## Docker 部署
+
+仓库提供应用容器、Caddy HTTPS 代理和持久化卷配置：
+
+```bash
+cd deploy
+cp ../agent/.env.example .env
+# 设置 DEEPSEEK_API_KEY、ADMIN_TOKEN 和 EVALUATION_DOMAIN
+docker compose up -d --build
+```
+
+正式接入 `tuce.asia` 的悬浮组件、独立子域名和备份方案见 [`docs/tuce-integration.md`](docs/tuce-integration.md)。当前配置是部署模板，尚未发布正式官网。
+
+## 配置
 
 | 变量 | 必填 | 说明 |
-|------|------|------|
-| `DEEPSEEK_API_KEY` | ✅ | DeepSeek API Key |
-| `DEEPSEEK_BASE_URL` | - | 默认 `https://api.deepseek.com` |
-| `DEEPSEEK_MODEL` | - | 默认 `deepseek-chat` |
-| `WECOM_WEBHOOK_URL` | 可选 | 企业微信群机器人 webhook（留空则跳过企微通知） |
-| `SMTP_HOST` / `SMTP_PORT` | 可选 | SMTP 服务器（QQ 邮箱：`smtp.qq.com`，端口 465） |
-| `SMTP_USER` / `SMTP_PASSWORD` | 可选 | 发件邮箱 + SMTP 授权码（非登录密码） |
-| `NOTIFY_EMAIL_TO` | 可选 | 收件顾问邮箱，多个用英文逗号分隔 |
-| `ADMIN_TOKEN` | 可选 | 数据查看界面（/admin.html）访问口令。留空则开放访问，**公网部署务必设置** |
+|---|---:|---|
+| `DEEPSEEK_API_KEY` | 是 | DeepSeek API Key |
+| `DEEPSEEK_BASE_URL` | 否 | 默认 `https://api.deepseek.com` |
+| `DEEPSEEK_MODEL` | 否 | 默认 `deepseek-chat` |
+| `ADMIN_TOKEN` | 是 | 顾问后台和模型连通检查口令；未设置时管理接口拒绝访问 |
+| `WECOM_WEBHOOK_URL` | 否 | 企业微信群机器人 webhook |
+| `SMTP_HOST` / `SMTP_PORT` | 否 | SMTP 服务器配置 |
+| `SMTP_USER` / `SMTP_PASSWORD` | 否 | 发件账号与授权码 |
+| `NOTIFY_EMAIL_TO` | 否 | 顾问收件地址，多个地址用逗号分隔 |
+| `RATE_LIMIT_WINDOW_SECONDS` | 否 | 限流窗口，默认 600 秒 |
+| `EVALUATE_RATE_LIMIT` | 否 | 单来源窗口内最多测评次数，默认 10 |
+| `LEAD_RATE_LIMIT` | 否 | 单来源窗口内最多留资次数，默认 20 |
 
-通知渠道留空不影响测评和留资，只是顾问收不到对应提醒。修改配置后需重启服务。
+## API
 
-## API 一览
+| 方法 | 路径 | 用途 |
+|---|---|---|
+| `GET` | `/health` | 健康检查 |
+| `GET` | `/api/v1/ping-deepseek` | 需管理口令的模型链路检查 |
+| `POST` | `/api/v1/evaluate` | 生成推荐，返回院校名单与 `report_id` |
+| `POST` | `/api/v1/leads` | 保存联系方式并解锁关联报告 |
+| `GET` | `/api/v1/leads` | 需管理口令的线索列表 |
+| `DELETE` | `/api/v1/leads` | 需管理口令及确认头，清除全部留资并保留报告 |
 
-| 方法 | 路径 | 说明 |
-|------|------|------|
-| GET | `/health` | 健康检查 |
-| GET | `/api/v1/ping-deepseek` | DeepSeek 链路连通性验证 |
-| POST | `/api/v1/evaluate` | 选校测评：`{gpa, major, target_country, school_tier?, degree?, language_type?, language_score?}` → 三档 6 校及服务端 `report_id` |
-| POST | `/api/v1/leads` | 留资：`{wechat, phone, report_id?, gpa?, major?, target_country?, school_tier?, degree?, language_type?, language_score?}` → `{id, message}` |
-| GET | `/api/v1/leads` | 线索列表（数据查看界面用）：需请求头 `X-Admin-Token` 携带口令（配置了 `ADMIN_TOKEN` 时） |
+接口参数和响应模型可在服务启动后通过 `/docs` 查看。
 
-错误统一为 `{"detail": "中文提示"}`：参数校验失败 422、AI 服务不可用 502、其他异常 500。
+## 项目边界与下一步
 
-## 数据查看
+当前版本定位为可运行的业务原型，而非完整商用 SaaS。正式投入生产前还需要：
 
-浏览器打开 <http://localhost:8000/admin.html>（或 `/admin`）查看全部留资线索：表格展示联系方式与测评背景（含选填维度），支持刷新、统计、导出 CSV。
+1. 建立脱敏的专家标注测评集，评估推荐相关性、事实正确率、档位合理性和模型回归。
+2. 接入经过版本管理的院校与专业数据，并为推荐结论提供可追溯引用。
+3. 将 SQLite 迁移至 PostgreSQL，支持并发、多实例和可靠的数据生命周期管理。
+4. 增加用户隐私授权、线索删除、保存期限、审计日志和角色权限。
+5. 增加结构化日志、trace ID、模型延迟、token 成本、错误率与告警。
 
-- 配置了 `ADMIN_TOKEN`：首次打开需输入口令（与 `.env` 中一致），口令保存在当前浏览器标签页会话中。
-- 未配置 `ADMIN_TOKEN`：直接开放访问，仅适合内网 / 开发环境，公网部署务必设置口令。
+## 目录结构
 
-## 测试
-
-运行自动化测试：
-
-```bash
-cd agent
-.venv/bin/python -m pytest
+```text
+study-abroad-evaluation/
+├── agent/
+│   ├── app/
+│   │   ├── main.py              # API、限流中间件与异常处理
+│   │   ├── schemas.py           # 输入、输出与跨字段校验
+│   │   ├── db.py                # SQLite、报告关联与兼容迁移
+│   │   ├── rate_limit.py        # 单实例固定窗口限流
+│   │   └── services/
+│   │       ├── deepseek.py      # 模型调用、超时与重试
+│   │       ├── selector.py      # 提示词、结构化解析与结果校验
+│   │       └── notify.py        # 企微与邮件通知
+│   ├── tests/test_core_flow.py  # 核心流程自动化测试
+│   └── .env.example
+├── web/static/                  # 用户页、顾问后台与官网嵌入组件
+├── deploy/                      # Docker Compose 与 Caddy HTTPS
+├── docs/                        # 测试证据与官网接入说明
+├── scripts/                     # 冒烟测试和 SQLite 备份
+└── Dockerfile
 ```
-
-服务启动后执行全链路冒烟测试（含真实 DeepSeek 调用，约 1 分钟）：
-
-```bash
-bash scripts/smoke_test.sh
-# 指定地址：BASE_URL=http://your-server:8000 bash scripts/smoke_test.sh
-# 配置了 ADMIN_TOKEN 时需透传口令：TOKEN=你的口令 bash scripts/smoke_test.sh
-```
-
-覆盖：健康检查、GPA/手机号等参数校验、测评真实调用、服务端报告关联、留资入库（含选填字段）、线索列表、数据查看页、首页可访问。
 
 ## 隐私与安全
 
-- 不要提交 `agent/.env`、真实 API Key、Webhook、SMTP 授权码或 `data/leads.db`；这些文件已在 `.gitignore` 中排除。
-- 公网部署前必须设置强随机 `ADMIN_TOKEN`，并通过 HTTPS 提供服务。
-- 线索数据包含微信号、手机号等个人信息。请依据适用的隐私法规取得用户授权，并设置访问控制、保存期限和删除流程。
-- 当前 SQLite 方案适合单实例和轻量使用；多实例部署时建议迁移到 PostgreSQL 等集中式数据库。
+- 不要提交 `.env`、API Key、Webhook、SMTP 授权码或 `data/leads.db`。
+- 线索包含微信号、手机号等个人信息，正式使用前必须取得授权并明确保存和删除规则。
+- `ADMIN_TOKEN` 必须使用强随机值；当前方案适合单机构后台，不等同于完整用户与权限系统。
+- 应用限流仅在单进程内生效，多进程或多实例部署需使用共享限流。
 
-## 部署（生产）
+## License
 
-SQLite 单文件存储，单进程即可，无需额外中间件。示例（服务器上）：
-
-```bash
-cd agent
-.venv/bin/python -m uvicorn app.main:app --host 0.0.0.0 --port 8000
-```
-
-长期运行二选一：
-
-**nohup**（最简单）：
-
-```bash
-nohup .venv/bin/python -m uvicorn app.main:app --host 0.0.0.0 --port 8000 >> ../uvicorn.log 2>&1 &
-```
-
-**systemd**（推荐，开机自启 / 崩溃自动拉起）：`/etc/systemd/system/school-eval.service`
-
-```ini
-[Unit]
-Description=School Evaluation Tool
-After=network.target
-
-[Service]
-WorkingDirectory=/opt/study-abroad-evaluation/agent
-ExecStart=/opt/study-abroad-evaluation/agent/.venv/bin/python -m uvicorn app.main:app --host 0.0.0.0 --port 8000
-Restart=always
-RestartSec=5
-
-[Install]
-WantedBy=multi-user.target
-```
-
-```bash
-sudo systemctl daemon-reload && sudo systemctl enable --now school-eval
-```
-
-其他建议：
-
-- **反代 + HTTPS**：前端含表单收集联系方式，公网环境建议用 Nginx / Caddy 反代并配置 HTTPS；静态页面已由 FastAPI 托管，反向代理只需转发 8000 端口即可。
-- **数据库备份**：定期备份 `data/leads.db`（留资线索的唯一存储），如 `cp data/leads.db data/backups/leads-$(date +%F).db`。
-- **日志**：系统日志中关键字 `未处理异常`、`企微通知失败`、`邮件通知失败` 可用于排障。
-
-## 项目状态与参与方式
-
-项目目前处于可运行的业务原型阶段，欢迎通过 GitHub Issues 提交问题或建议，也欢迎提交 Pull Request。提交改动前请先运行自动化测试，并确保示例配置中不包含真实凭据或用户数据。
-
-当前版本主要面向单机构、单实例部署，尚未包含用户账号、多租户、线索删除流程、限流和生产级监控。正式商用前应补齐隐私授权、数据生命周期管理、接口限流与可观测性。
-
-## 常见问题
-
-- **启动报 venv 脚本路径错误（No such file or directory）**：项目目录曾被重命名，venv 内脚本 shebang 指向旧路径。用 `.venv/bin/python -m uvicorn ...` 启动即可。
-- **测评接口 502**：DeepSeek key 失效 / 余额不足 / 网络不通，重试 2 次后返回「AI 服务暂时不可用」；`/api/v1/ping-deepseek` 可单独验证连通性。
-- **留资成功但顾问没收到通知**：检查 `.env` 通知配置是否已填（留空则静默跳过），重启服务后生效；通知失败不影响留资入库。
+该仓库是业务原型。公开使用或二次分发前，请先确认项目数据、品牌素材与业务代码的授权范围。

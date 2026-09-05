@@ -1,0 +1,41 @@
+services:
+  app:
+    build:
+      context: ..
+    restart: unless-stopped
+    environment:
+      DEEPSEEK_API_KEY: ${DEEPSEEK_API_KEY:?请配置 DEEPSEEK_API_KEY}
+      ADMIN_TOKEN: ${ADMIN_TOKEN:?请配置强随机 ADMIN_TOKEN}
+      DEEPSEEK_BASE_URL: ${DEEPSEEK_BASE_URL:-https://api.deepseek.com}
+      DEEPSEEK_MODEL: ${DEEPSEEK_MODEL:-deepseek-chat}
+      WECOM_WEBHOOK_URL: ${WECOM_WEBHOOK_URL:-}
+      SMTP_HOST: ${SMTP_HOST:-}
+      SMTP_PORT: ${SMTP_PORT:-465}
+      SMTP_USER: ${SMTP_USER:-}
+      SMTP_PASSWORD: ${SMTP_PASSWORD:-}
+      NOTIFY_EMAIL_TO: ${NOTIFY_EMAIL_TO:-}
+      RATE_LIMIT_WINDOW_SECONDS: ${RATE_LIMIT_WINDOW_SECONDS:-600}
+      EVALUATE_RATE_LIMIT: ${EVALUATE_RATE_LIMIT:-10}
+      LEAD_RATE_LIMIT: ${LEAD_RATE_LIMIT:-20}
+    volumes:
+      - leads:/app/data
+    # 不把 Python 端口直接暴露到公网，仅通过 HTTPS 代理访问。
+  caddy:
+    image: caddy:2-alpine
+    restart: unless-stopped
+    environment:
+      EVALUATION_DOMAIN: ${EVALUATION_DOMAIN:?请配置已解析的测评子域名}
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      app:
+        condition: service_healthy
+volumes:
+  leads:
+  caddy_data:
+  caddy_config:
